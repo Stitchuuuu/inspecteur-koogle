@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron'
 import { platform } from 'os'
-import { parseSentences } from './sentence.helper'
-
+import worker from './worker.js'
 import path from 'path'
 
 const pt = platform()
@@ -196,5 +195,14 @@ app.whenReady().then(() => {
 		googleClient.window.setSize(640, 768)
 		googleClient.window.show()
 	})
-	createGoogleSearchWindow()
+	ipcMain.on('text:parse', async (e, data) => {
+		try {
+			console.log('beginning?')
+			const d = await worker('text-parse', data)
+			console.log(d)
+		} catch (e) {
+			console.log(e)
+		}
+	})
+	createWindow()
 })

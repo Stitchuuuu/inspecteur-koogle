@@ -36,6 +36,7 @@
     "axios": "^0.21.1",
     "electron-squirrel-startup": "^1.0.0",
     "eslint-plugin-vue": "^7.8.0",
+    "jsdom": "^16.5.2",
     "tar": "^6.1.0",
     "tmi.js": "^1.7.1",
     "vue-cli": "^2.9.6"

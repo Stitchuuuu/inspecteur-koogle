@@ -1,12 +1,21 @@
 const path = require('path')
+const glob = require("glob")
+const workers = { }
+for (const worker of glob.sync(path.resolve(__dirname, './worker/*.js'))) {
+	const filename = worker.split('/').pop().split('.js').shift()
+	workers[`worker/${filename}`] = worker
+}
 const config = {
 	mode: process.env.NODE_ENV === 'production' ? 'production': 'development',
 	devtool: process.env.NODE_ENV === 'production' ? 'hidden-source-map' : 'source-map',
 	target: 'electron11.2-main',
-	entry: path.resolve(__dirname, './index.js'),
+	entry: {
+		index: path.resolve(__dirname, './index.js'),
+		...workers
+	},
 	output: {
 		path: path.resolve(__dirname, '../../main'),
-		filename: 'index.js',
+		filename: '[name].js',
 	},
 	module: {
 		rules: [

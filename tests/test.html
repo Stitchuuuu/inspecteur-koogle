@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello World!</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        div.editor {
+            position: relative;
+        }
+        div.editor > div.overlay {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
+    </style>
+  </head>
+  <body>
+      <div></div>
+      <div class="editor">
+        <div>Hello world</div>
+        <div class="overlay" style="background-color: rgba(0,0,0,0.2)"></div>
+      </div>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+[ ] Fenêtre principale permettant de configurer l'overlay
+    [ ] Module, theme, etc...
+    [ ] Se connecter sur Streamlabs / Twitch
+[ ] Fenêtre overlay, non clickable de base
+    [ ] des composants draggable partout + resizable
+    [ ] Un composant classique "fenêtre web" ou on peut rentrer une URL
+[ ] Fenêtre "unlock/lock" pour avoir cliquer sur l'overlay, et bouger/redim les fenêtres (voir ajouter plus tard)
+
+[ ] Raccourci globaux, pour pouvoir contrôler chaque module
+[ ] Possibilité de créer ses propres modules
+[ ] Un module
+    [ ] Doit importer un composant VueJS <bloby-overlay-modal>
+    [ ] Il y a 2 contenu, le conteu cliquable, et le contenu non cliquable
+    [ ] Peut être bougé, redimensionner, a un nom
+    [ ] Comment importer des modules à chaud ?
+
+
+[ ] External plugin
+    [ ] background/
+    [ ] renderer/
+    [ ] utiliser "require('npm')" pour installer les packages manquants, nécessitera un reload
+        https://stackoverflow.com/questions/20686244/install-programmatically-a-npm-package-providing-its-version
+    
+    [ ] Tester un plugin en live:
+        [ ] Vue plugin live:
+            https://codepen.io/getreworked/pen/XZOgbm?editors=1010
+        [ ] NodeJS: child_process.fork 
+
+        [ ] Path vers le plugin
+        [ ] dist/renderer.js
+        [ ] dist/background.js
+        [ ] dist/renderer.css
+        [ ] dist/package.json
+
+        [ ] auto-live generate
+            [ ] vue-cli-service pour renderer/index.js
+            [ ] webpack pour background/
+        [ ] A chaque changement, reload le plugin ?

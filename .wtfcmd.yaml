@@ -1,0 +1,35 @@
+- group: main
+  name: build
+  desc: Compile main code (nodejs)
+  cmd: NODE_ENV=production node ../../node_modules/webpack/bin/webpack.js
+  cwd: ./src/main
+
+- group: main
+  name: dev
+  desc: Watch for changes & recompile code for main
+  cmd: node ../../node_modules/webpack/bin/webpack.js --watch
+  cwd: ./src/main
+
+- group: renderer
+  name: dev
+  desc: Watch for changes & recompile renderer code (web + vuejs)
+  cmd: npm run serve
+  cwd: ./src/renderer
+
+- group: renderer
+  name: build
+  desc: Compile renderer code (web + vuejs)
+  cmd: npm run build
+  cwd: ./src/renderer
+
+- name: build
+  desc: Compile the renderer & the main
+  cmd: |
+    wtf main build
+    wtf renderer build
+
+- name: make
+  desc: Compile + create the installer
+  cmd: |
+    wtf build
+    npm run make

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, session } from 'electron'
 import { platform } from 'os'
 import fs from 'fs'
 import worker from './worker.js'
@@ -8,7 +8,13 @@ const pt = platform()
 const isMac = pt === 'darwin'
 // const isWindows = pt === 'win32'
 const IS_DEV = !((app && app.isPackaged) || process.env.NODE_ENV === 'production')
-
+if (!IS_DEV && app && app.isPackaged && !process.env.NODE_ENV) {
+	process.env.ENV = 'production'
+} else if (!process.env.NODE_ENV) {
+	process.env.ENV = 'development'
+} else {
+	process.env.ENV = process.env.NODE_ENV
+}
 function show(win, page) {
 	if (!page) page = ''
 	if (app.isPackaged || process.env.NODE_ENV === 'production') {
@@ -17,6 +23,74 @@ function show(win, page) {
 	} else {
 		win.loadURL('http://localhost:8080/' + page)
 	}
+}
+let applicationGlobalMenu = null
+function applicationMenu() {
+	if (applicationGlobalMenu) return applicationGlobalMenu
+
+	const template = [
+		...(isMac ? [{
+			label: app.name,
+			submenu: [
+				{ role: 'about', label: 'À propos' },
+				{ type: 'separator' },
+				{ role: 'services', label: 'Services' },
+				{ type: 'separator' },
+				{ role: 'hide' },
+				{ role: 'hideothers' },
+				{ role: 'unhide' },
+				{ type: 'separator' },
+				{ role: 'quit' },
+			],
+		}] : []),
+		{
+			label: 'Fichier',
+			submenu: [
+				isMac ? { role: 'close', label: 'Fermer' } : { role: 'quit', label: 'Fermer' },
+			],
+		},
+		{
+			label: 'Édition',
+			submenu: [
+				{ role: 'paste', label: 'Coller' },
+			],
+		},
+		{
+			label: 'Afficher',
+			submenu: [
+				{
+					id: 'view-google-window',
+					label: 'Afficher la fenêtre Google',
+					click: async() => {
+						googleClient && googleClient.window.show()
+					},
+					enabled: !!googleClient,
+				},
+				{ role: 'reload', label: 'Rafraichir' },
+				...(!IS_DEV ? [] : [
+					{ type: 'separator' },
+					{ role: 'toggleDevTools' },
+				]),
+			],
+		},
+		{
+			label: 'Fenêtre',
+			submenu: [
+				{ role: 'minimize' },
+				{ role: 'zoom' },
+				...(isMac ? [
+					{ type: 'separator' },
+					{ role: 'front' },
+					{ type: 'separator' },
+					{ role: 'window' },
+				] : [
+					{ role: 'close' },
+				]),
+			],
+		},
+	]
+	applicationGlobalMenu = Menu.buildFromTemplate(template)
+	return applicationGlobalMenu
 }
 
 
@@ -40,10 +114,15 @@ function createWindow(relativeURL, options) {
 		},
 		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png'),
 	})
+	win.setMenu(applicationMenu())
 	show(win, relativeURL)
 	if (IS_DEV) {
 		win.openDevTools({ mode: 'detach' })
 	}
+	win.on('closed', () => {
+		appWindow = null
+	})
+	return win
 }
 function createGoogleSearchWindow() {
 	const win = new BrowserWindow({
@@ -59,6 +138,17 @@ function createGoogleSearchWindow() {
 		},
 		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png'),
 	})
+	win.on('close', (e) => {
+		if (appWindow) {
+			e.preventDefault()
+			win.hide()	
+			setTimeout(() => {
+				if (!appWindow) {
+					win.close()
+				}
+			}, 500)
+		}
+	})
 	if (IS_DEV) {
 		win.openDevTools({ mode: 'detach' })
 	}
@@ -72,9 +162,21 @@ function createGoogleSearchWindow() {
 }
 let googleClient = null
 
-async function OnGoogleClientReady() {
+function OnGoogleClientReady() {
 	if (prGoogleSearchInit) {
 		prGoogleSearchInit.resolve()
+	}
+	OnGoogleClientReadyOrResults()
+}
+function OnGoogleClientReadyOrResults() {
+	if (googleClient.wasCaptchaBefore && googleClient.currentSearch) {
+		const cs = googleClient.currentSearch
+		if (cs.window) {
+			cs.window.show()
+			if (cs.emit) {
+				cs.emit('captcha:done')
+			}
+		}
 	}
 }
 
@@ -104,7 +206,8 @@ ipcMain.on('main:log', (e, args) => {
 	console.log.apply(console, args)
 })
 
-function GoogleSearch(text, exact) {
+function GoogleSearch(text, exact, options) {
+	const opts = { ...options }
 	return new Promise((resolve, reject) => {
 		if (exact && text[0] != '"') {
 			text = `"${text}"`
@@ -113,11 +216,18 @@ function GoogleSearch(text, exact) {
 			resolve(results)
 		}
 		ipcMain.once('google:results', lt)
-		setTimeout(() => {
+		let timeout = setTimeout(() => {
 			ipcMain.off('google:results', lt)			
 			reject(new Error('Timeout'))
 		}, 10000)
 		if (googleClient) {
+			googleClient.currentSearch = {
+				resolve,
+				reject,
+				timeout,
+				window: opts.window || null,
+				emit: opts.emit || null,
+			}
 			googleClient.emit('search', text)
 		} else {
 			reject(new Error('No google client.'))
@@ -136,36 +246,52 @@ function id(prefix) {
 
 let prGoogleSearchInit = null
 
-function GoogleSearchInit() {
+function GoogleSearchInit(options) {
+	const opts = { ...options }
+	const currentSearch = {
+		window: opts.window || null,
+		emit: opts.emit || null,	
+	}
+	if (googleClient) {
+		googleClient.currentSearch = currentSearch
+	}
 	if (googleClient && ~['search', 'ready'].indexOf(googleClient.state)) {
 		return Promise.resolve()
+	} else if (googleClient && googleClient.state === 'captcha') {
+		return Promise.reject(new Error('Captcha required.'))
+	} else if (googleClient) {
+		return Promise.reject(new Error('Window not ready'))
 	}
 	if (prGoogleSearchInit) return prGoogleSearchInit.promise
 	prGoogleSearchInit = {}
 	const pr = new Promise((resolve, reject) => {
 		prGoogleSearchInit.resolve = (v) => {
-			console.log('Resolving ?')
 			prGoogleSearchInit = null
 			resolve(v)
 		}
 		prGoogleSearchInit.reject = (v) => {
-			console.log('Rejecting ?')
 			prGoogleSearchInit = null
 			reject(v)
 		}
 	})
 	prGoogleSearchInit.promise = pr
+	googleClient = { currentSearch }
 	createGoogleSearchWindow()
 	return pr
 }
+function SetEnableMenuItem(id, val) {
+	Menu.getApplicationMenu().getMenuItemById(id).enabled = val
+}
+
+let appWindow = null
 
 
 app.whenReady().then(async() => {
 	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.7_0')
-
+	Menu.setApplicationMenu(applicationMenu())
 	session.defaultSession.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
 		let cancel = false
-		if (googleClient && details.webContentsId) {
+		if (googleClient && googleClient.webContents && details.webContentsId) {
 			if (googleClient.webContents.id === details.webContentsId) {
 				if (googleClient.state !== 'captcha' && !~['script, xhr'].indexOf(details.resourceType)) {
 					cancel = true
@@ -182,19 +308,21 @@ app.whenReady().then(async() => {
 	})
 	ipcMain.on('google:init', (e) => {
 		const window = BrowserWindow.fromWebContents(e.sender)
-		if (googleClient) {
+		if (googleClient && googleClient.interval) {
 			clearInterval(googleClient.interval)
 		}
-		if (googleClient && window.id !== googleClient.window.id) {
+		if (googleClient && googleClient.window && window.id !== googleClient.window.id) {
 			googleClient.window.close()
 			googleClient = null
 		}
-		googleClient = {
+		googleClient = Object.assign({}, googleClient, {
 			webContents: e.sender,
 			frame: e.senderFrame,
 			window: BrowserWindow.fromWebContents(e.sender),
 			emit: e.reply,
 			state: 'init',
+			wasReadyBefore: googleClient ? googleClient.state === 'ready' || googleClient.state === 'search' : false,
+			wasCaptchaBefore: googleClient ? googleClient.state === 'captcha' : false,
 			lastStateUpdate: new Date(),
 			interval: setInterval(() => {
 				if (googleClient && googleClient.state !== 'ready' && (new Date() - googleClient.lastStateUpdate) > 1000 * 30) {
@@ -206,11 +334,13 @@ app.whenReady().then(async() => {
 					googleClient.interval = -1
 				}
 			}, 5000),
-		}
+		})
+		SetEnableMenuItem('view-google-window', true)
 	})
 	ipcMain.on('google:search', () => {
 		googleClient.state = 'search'
 		googleClient.lastStateUpdate = new Date()
+		OnGoogleClientReadyOrResults()
 		clearInterval(googleClient.interval)
 	})
 	ipcMain.on('google:consent', () => {
@@ -231,9 +361,21 @@ app.whenReady().then(async() => {
 	ipcMain.on('google:captcha', () => {
 		googleClient.state = 'captcha'
 		googleClient.window.setSize(640, 768)
+		if (googleClient.wasReadyBefore) {
+			googleClient.window.reload()
+		}
 		if (prGoogleSearchInit) {
 			prGoogleSearchInit.reject(new Error('Captcha required.'))
+		} else if (googleClient.currentSearch && googleClient.currentSearch.reject) {
+			clearTimeout(googleClient.currentSearch.timeout)
+			googleClient.currentSearch.reject(new Error('Captcha required.'))
 		}
+	})
+	ipcMain.on('google:show-window', () => {
+		googleClient && googleClient.window && googleClient.window.show()
+	})
+	ipcMain.on('google:hide-window', () => {
+		googleClient && googleClient.window && googleClient.window.hide()
 	})
 	ipcMain.handle('boot', async () => {
 		await loadState()
@@ -262,16 +404,17 @@ app.whenReady().then(async() => {
 		}
 	})
 	ipcMain.handle('sentence:googleSearch', async (e, sentence) => {
-		if (!googleClient) {
-			console.log('awaiting google client ?')
-			await GoogleSearchInit()
-			console.log('awaited.')
+		const w = {
+			window: BrowserWindow.fromWebContents(e.sender),
+			emit: (...args) => e.sender.send.apply(e.sender, args),
 		}
-		const results = await GoogleSearch(sentence.sentence, true)
+		await GoogleSearchInit(w)
+		const results = await GoogleSearch(sentence.sentence, true, w)
 		if (currentAudit && Array.isArray(currentAudit.sentences)) {
 			const s = currentAudit.sentences.find(s => s.id === sentence.id)
 			if (s) {
 				s.resultsOnGoogle = results.total
+				s.searchStatus = 'success'
 				saveState()
 			}
 		}
@@ -280,5 +423,5 @@ app.whenReady().then(async() => {
 			resultsOnGoogle: results.total,
 		}
 	})
-	createWindow()
+	appWindow = createWindow()
 })

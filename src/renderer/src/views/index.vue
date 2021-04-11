@@ -19,7 +19,8 @@
 				<div class="actions">
 					<div>
 						<ui-button>Afficher le texte</ui-button>
-						<ui-button>Lancer l'analyse</ui-button>
+						<ui-button v-if="!allSearching" @click="startSearchAll">Lancer l'analyse</ui-button>
+						<ui-button v-else @click="stopSearchAll" class="loader">Stopper l'analyse</ui-button>
 					</div>
 					<div>
 						<ui-button @click="audit = null">Charger un autre texte</ui-button>
@@ -46,6 +47,19 @@
 		</template>
 	</transition>
 	<transition name="fade-y">
+		<div v-if="modal" class="modal-container">
+			<div class="modal">
+				<div v-if="modal.title" class="modal-title">{{ modal.title }}</div>
+				<div v-if="modal.content" class="modal-content">{{ modal.content }}</div>
+				<div v-if="modal.actions" class="modal-actions">
+					<ui-button v-for="(action, actionIndex) in modal.actions" :key="actionIndex" @click="action.click">
+						{{ action.label }}
+					</ui-button>
+				</div>
+			</div>
+		</div>
+	</transition>
+	<transition name="fade-y">
 		<div v-if="notification" class="notification">{{ notification }}</div>
 	</transition>
   </div>
@@ -63,8 +77,27 @@ export default {
 		error: null,
 		audit: null,
 		notification: null,
+		allSearching: false,
+		modal: null,
 	}),
 	methods: {
+		async startSearchAll() {
+			this.allSearching = true
+			let nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none') 
+			while (this.allSearching && nextSentenceToSearch) {
+				try {
+					await this.testGoogleSearch(nextSentenceToSearch)
+					nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null)
+				} catch(err) {
+					console.error(err)
+					this.allSearching = false
+					break
+				}
+			}
+		},
+		stopSearchAll() {
+			this.allSearching = false
+		},
 		testGoogleSearch: function(s) { return new Promise((resolve, reject) => {
 			s.searchLoading = true
 			this.$server.invoke('sentence:googleSearch', {
@@ -75,9 +108,37 @@ export default {
 				s.searchStatus = 'success'
 				resolve()
 			}).catch(err => {
-				s.searchStatus = 'failed'
 				console.error(err)
-				reject(err)
+				if (~err.message.toLowerCase().indexOf('captcha')) {
+					console.log('hey?')
+					this.modal = {
+						title: 'Anti-bot détecté',
+						content: 'Un test anti-bot doit être résolu afin de poursuivre l\'analyse.',
+						actions: [{
+							label: 'Résoudre le test',
+							click: () => {
+								this.$server.send('google:show-window')
+								this.$server.once('captcha:done', () => {
+									this.$server.send('google:hide-window')
+									this.modal = null
+									setTimeout(() => {
+										this.testGoogleSearch(s).then(resolve).catch(reject)
+									}, 100)
+								})
+							},
+						}, {
+							label: 'Annuler',
+							click: () => {
+								this.modal = null
+								s.searchStatus = 'failed'
+								console.error(err)
+								reject(err)
+							},
+						}],
+					}
+				} else {
+					s.searchStatus = 'failed'
+				}
 			}).finally(() => {
 				s.searchLoading = false
 			})
@@ -166,6 +227,48 @@ svg {
 	background-color: green;
 	color: white;
 	width: 100%;
+}
+.modal-container {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100vh;
+	width: 100vw;
+	background-color: rgba(0,0,0,0.3);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	.modal {
+		width: 80vh;
+		max-width: 600px;
+		padding: 2em;
+		background-color: #F6AC5E;
+		color: #091044;
+		display: flex;
+		flex-direction: column;
+		&-title {
+			font-weight: bold;
+			text-transform: uppercase;
+		}
+		&-content {
+			padding: 1em 0;
+			flex: 1;
+		}
+		&-actions {
+			display: flex;
+			.ui-button {
+				background-color: rgba(0,0,0,0.1);
+				&:hover {
+					background-color: rgba(0,0,0,0.3);
+				}
+				flex: 1;
+				margin-right: 10px;
+				&:last-child {
+					margin-right: 0;
+				}
+			}
+		}
+	}
 }
 .home {
 	.steps {

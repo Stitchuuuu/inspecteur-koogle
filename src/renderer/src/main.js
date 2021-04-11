@@ -21,6 +21,12 @@ createApp(App)
 							callback.apply(this, [...args, e])
 						})
 					}
+					this.once = (eventName, callback) => {
+						// console.debug(`IPC | Listening Once ${eventName}`)
+						return vm.$ipc.once(eventName, (e, ...args) => {
+							callback.apply(this, [...args, e])
+						})
+					}
 					this.send = (...args) => {
 						// console.debug(`IPC | Sending ${args[0]}`)
 						return vm.$ipc.send.apply(vm.$ipc, args)

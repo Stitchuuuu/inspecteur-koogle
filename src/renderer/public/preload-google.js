@@ -1,4 +1,15 @@
 (() => {
+	const IS_DEV = process.env.ENV !== 'production'
+	if (IS_DEV) {
+		window.simulateCaptcha = function(filled) {
+			window.localStorage.setItem('debug-captcha-feature', filled ? '1' : '0')
+			if (filled) {
+				window.location = 'https://www.google.fr/search'
+			} else {
+				window.location.reload()
+			}
+		}
+	}
 	const $ipc = require('electron').ipcRenderer
 	const $log = (...args) => {
 		$ipc.send('main:log', JSON.parse(JSON.stringify(args)))
@@ -96,7 +107,10 @@
 			// $log('Renderer | No captcha')
 			// Testing if there's a search
 			let search = window.location.search
-			if (search) {
+			if (window.localStorage.getItem('debug-captcha-feature') === '0') {
+				debuglog('Simulating captcha')
+				search = false
+			} else if (search) {
 				const listParams = search.substr(1).split('&')
 				const params = { }
 				for (const p of listParams) {
@@ -119,7 +133,13 @@
 			}
 			if (!search) {
 				// $log('Renderer | google:ready')
-				$ipc.send('google:ready')
+				if (window.localStorage.getItem('debug-captcha-feature') === '0') {
+					debuglog('google:captcha')
+					$ipc.send('google:captcha')
+				} else {
+					debuglog('google:ready')
+					$ipc.send('google:ready')
+				}
 			}
 			$ipc.on('search', (e, text) => {
 				debuglog('IPC | Recieved search:', text)

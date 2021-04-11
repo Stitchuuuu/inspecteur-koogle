@@ -7,7 +7,7 @@
 		<template v-else-if="loaded">
 			<div v-if="!audit" class="steps">
 				<h1>1. Copie ton texte depuis ton éditeur</h1>
-				<h1>2. Colle ton texte ici via <template v-if="isMac">Cmd+V</template><template v-else>Ctrl+V</template></h1>
+				<h1>2. Colle ton texte ici via <template v-if="isMac"><icon src="@/assets/icons/cmd.svg" /> + V</template><template v-else>Ctrl+V</template></h1>
 				<transition name="fade-y">
 					<div v-if="loadingText" class="notice loader">Analyse du texte en cours</div>
 				</transition>
@@ -49,13 +49,13 @@
 						</div>
 						<div v-for="sentence in filteredSentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0}">
 							<div class="copy" @click="copySentence(sentence)" :class="{'loader': sentence.searchLoading }">
-								<template v-if="!sentence.searchLoading">C</template>
+								<template v-if="!sentence.searchLoading"><icon src="@/assets/icons/copy.svg" /></template>
 							</div>
 							<div class="text" @click="copySentence(sentence)">{{ sentence.sentence }}</div>
 							<div v-if="sentence.resultsOnGoogle !== null && sentence.resultsOnGoogle > 0" class="results" :class="{'high': sentence.resultsOnGoogle.toString().length > 5, 'veryhigh': sentence.resultsOnGoogle.toString().length > 8}">{{ sentence.resultsOnGoogle }}</div>
 							<div class="actions">
-								<ui-button @click="testGoogleSearch(sentence)">T</ui-button>
-								<ui-button type="link" :external="true" :href="generateGoogleSearchLink(sentence.sentence)">G</ui-button>
+								<ui-button @click="testGoogleSearch(sentence)"><icon src="@/assets/icons/search.svg" /></ui-button>
+								<ui-button type="link" :external="true" :href="generateGoogleSearchLink(sentence.sentence)"><icon src="@/assets/icons/google.svg" /></ui-button>
 							</div>
 						</div>
 					</div>
@@ -84,6 +84,7 @@
 
 <script>
 import uiButton from '@/components/button'
+import icon from '@/components/icon'
 
 export default {
 	name: 'Home',
@@ -232,6 +233,7 @@ export default {
 	},
 	components: {
 		uiButton,
+		icon,
 	},
 }
 </script>
@@ -357,6 +359,12 @@ svg {
 		.error {
 			background-color: #A86E2F;
 		}
+		svg {
+			height: 1em;
+			width: 1em;
+			position: relative;
+			top: 0.15em;
+		}
 	}
 	display: flex;
 	align-items: center;
@@ -458,11 +466,19 @@ svg {
 	}
 	.actions {
 		font-size: 0.75em;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		.ui-button {
 			margin-right: 5px;
+			display: inline-block;
 			background-color: rgba(0, 0, 0, 0.1);
 			&:hover {
 				background-color: rgba(0, 0, 0, 0.3);
+			}
+			svg {
+				height: 1em;
+				width: 1em;
 			}
 		}
 	}

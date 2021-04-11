@@ -51,12 +51,6 @@ export default {
 	&:hover, &:active {
 		background-color: rgba(246, 172, 94, 0.8);
 	}
-	svg {
-		width: 2em;
-		height: 2em;
-		margin-right: 10px;
-		fill: black;
-	}
 	&.unclickable {
 		cursor: default;
 		pointer-events: none;

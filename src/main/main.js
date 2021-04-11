@@ -7,6 +7,7 @@ import path from 'path'
 const pt = platform()
 const isMac = pt === 'darwin'
 // const isWindows = pt === 'win32'
+const isBetaOrAlpha = (~app.getVersion().indexOf('-beta.') || ~app.getVersion().indexOf('-alpha.'))
 
 const APP_WINDOW_NAME = 'Inspecteur Google - Détecteur anti-plagiat'
 
@@ -70,8 +71,10 @@ function applicationMenu() {
 					enabled: !!googleClient,
 				},
 				{ role: 'reload', label: 'Rafraichir' },
-				{ type: 'separator' },
-				{ role: 'toggleDevTools' },
+				...((!IS_DEV && !isBetaOrAlpha) ? [] : [
+					{ type: 'separator' },
+					{ role: 'toggleDevTools' },
+				]),
 			],
 		},
 		{

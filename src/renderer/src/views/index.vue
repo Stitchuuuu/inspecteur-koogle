@@ -38,7 +38,7 @@
 				</div>
 				<div v-if="auditProgress < 1" class="progressbar">
 					<div class="progressbar-value" :style="{ width: auditProgressPercent + '%' }"></div>
-					<div class="progressbar-text">Analyse complété à {{ auditProgressPercent }}%</div>
+					<div class="progressbar-text">Analyse complétée à {{ auditProgressPercent }}%</div>
 				</div>
 				<div class="content">
 					<h1><span>{{ audit.quotes.length }}</span> citations ignorées</h1>

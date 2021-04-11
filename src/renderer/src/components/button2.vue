@@ -7,20 +7,20 @@
 <script>
 export default {
 	inheritAttrs: false,
-  name: 'ui-button',
-  props: {
-    type: {
+	name: 'ui-button',
+	props: {
+		type: {
 			type: String,
 			default: 'button',
 		},
-  },
+	},
 }
 </script>
 
 <style lang="scss">
 .ui-button {
   margin: 0;
-	padding: 0.5rem 1rem;
+	padding: 0.5em 1em;
 	border: 0px;
 	outline: 0;
 	user-select: none;
@@ -31,7 +31,7 @@ export default {
 	align-items: center;
 	justify-content: center;
 	background-color: rgb(246, 172, 94);
-	font-size: 1rem;
+	font-size: 1em;
 	color: black;
 	transition: background-color 0.3s;
 	&.fullwidth {
@@ -41,8 +41,8 @@ export default {
 		background-color: rgba(246, 172, 94, 0.8);
 	}
 	svg {
-		width: 2rem;
-		height: 2rem;
+		width: 2em;
+		height: 2em;
 		margin-right: 10px;
 		fill: black;
 	}

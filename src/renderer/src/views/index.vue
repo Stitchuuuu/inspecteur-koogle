@@ -28,9 +28,23 @@
 				<div class="content">
 					<h1><span>{{ audit.quotes.length }}</span> citations trouvées</h1>
 					<h1><span>{{ audit.sentences.length }}</span> phrases / partie de phrase trouvées</h1>
+					<div>
+						<div v-for="sentence in audit.sentences" :key="sentence.id" class="sentence">
+							<div class="copy" @click="copySentence(sentence)">C</div>
+							<div class="text" @click="copySentence(sentence)">{{ sentence.sentence }}</div>
+							<div v-if="sentence.resultsOnGoogle !== null" class="results">{{ sentence.resultsOnGoogle }}</div>
+							<div class="actions">
+								<ui-button>T</ui-button>
+								<ui-button>G</ui-button>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</template>
+	</transition>
+	<transition name="fade-y">
+		<div v-if="notification" class="notification">{{ notification }}</div>
 	</transition>
   </div>
 </template>
@@ -46,8 +60,20 @@ export default {
 		loadingText: false,
 		error: null,
 		audit: null,
+		notification: null,
 	}),
 	methods: {
+		async copySentence(s) {
+			await navigator.clipboard.writeText(s.sentence)
+			this.pushNotification('Le texte a été copié !')
+		},
+		pushNotification(text) {
+			clearTimeout(this._notification_timeout)
+			this.notification = text
+			this._notification_timeout = setTimeout(() => {
+				this.notification = ''
+			}, 2000)
+		},
 		async onPasteData(e) {
 			this.error = null
 			this.loadingText = true
@@ -66,6 +92,7 @@ export default {
 		},
 	},
 	mounted() {
+		this._notification_timeout = -1
 		document.addEventListener('paste', (e) => this.onPasteData(e))
 		this.$server.invoke('boot').then((bootData) => {
 			this.audit = bootData.currentAudit
@@ -103,6 +130,18 @@ body {
 }
 svg {
 	fill: #F6AC5E;
+}
+.notification {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	padding: 0.5em 1em;
+	height: 2em;
+	display: flex;
+	align-items: center;
+	background-color: green;
+	color: white;
+	width: 100%;
 }
 .home {
 	.steps {
@@ -153,12 +192,45 @@ svg {
 			flex: 1;
 			width: 100%;
 			box-sizing: border-box;
+			padding-bottom: 2em;
 		}
-		.actions {
+		> .actions {
 			display: flex;
 			justify-content: space-between;
 			.ui-button {
 				margin-right: 10px;
+			}
+			padding-bottom: 1em;
+		}
+	}
+}
+.sentence {
+	background-color: #f6ac5e;
+	color: #091044;
+	padding: 10px;
+	display: flex;
+	align-items: center;
+	margin-top: 5px;
+	> div {
+		margin-right: 10px;
+		&:last-child {
+			margin-right: 0;
+		}
+	}
+	.text {
+		flex: 1;
+		cursor: pointer;
+	}
+	.copy {
+		cursor: pointer;
+	}
+	.actions {
+		font-size: 0.75em;
+		.ui-button {
+			margin-right: 5px;
+			background-color: rgba(0, 0, 0, 0.1);
+			&:hover {
+				background-color: rgba(0, 0, 0, 0.3);
 			}
 		}
 	}

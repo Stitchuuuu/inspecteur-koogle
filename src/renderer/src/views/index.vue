@@ -7,7 +7,7 @@
 		<template v-else-if="loaded">
 			<div v-if="!audit" class="steps">
 				<h1>1. Copie ton texte depuis ton éditeur</h1>
-				<h1>2. Colle ton texte ici via Cmd+V ou Ctrl+V</h1>
+				<h1>2. Colle ton texte ici via <template v-if="isMac">Cmd+V</template><template v-else>Ctrl+V</template></h1>
 				<transition name="fade-y">
 					<div v-if="loadingText" class="notice loader">Analyse du texte en cours</div>
 				</transition>
@@ -18,19 +18,36 @@
 			<div v-else class="audit">
 				<div class="actions">
 					<div>
-						<ui-button>Afficher le texte</ui-button>
-						<ui-button v-if="!allSearching" @click="startSearchAll">Lancer l'analyse</ui-button>
+						<ui-button v-if="!allSearching" @click="startSearchAll">
+							<template v-if="auditProgress === 1">
+								Relancer l'analyse
+							</template>
+							<template v-else-if="auditProgress > 0">
+								Continuer l'analyse
+							</template>
+							<template v-else>
+								Lancer l'analyse
+							</template>
+						</ui-button>
 						<ui-button v-else @click="stopSearchAll" class="loader">Stopper l'analyse</ui-button>
 					</div>
 					<div>
 						<ui-button @click="audit = null">Charger un autre texte</ui-button>
 					</div>
 				</div>
+				<div v-if="auditProgress < 1" class="progressbar">
+					<div class="progressbar-value" :style="{ width: auditProgressPercent + '%' }"></div>
+					<div class="progressbar-text">Analyse complété à {{ auditProgressPercent }}%</div>
+				</div>
 				<div class="content">
-					<h1><span>{{ audit.quotes.length }}</span> citations trouvées</h1>
-					<h1><span>{{ audit.sentences.length }}</span> phrases / partie de phrase trouvées</h1>
+					<h1><span>{{ audit.quotes.length }}</span> citations ignorées</h1>
+					<h1><span>{{ audit.sentences.length }}</span> phrases / partie de phrase à analyser</h1>
 					<div>
-						<div v-for="sentence in audit.sentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0}">
+						<div class="table-actions">
+							<ui-button v-if="showAllResults" @click="showAllResults = !showAllResults">Voir uniquement les « plagiats »</ui-button>
+							<ui-button v-else @click="showAllResults = !showAllResults">Voir tout</ui-button>
+						</div>
+						<div v-for="sentence in filteredSentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0}">
 							<div class="copy" @click="copySentence(sentence)" :class="{'loader': sentence.searchLoading }">
 								<template v-if="!sentence.searchLoading">C</template>
 							</div>
@@ -79,11 +96,34 @@ export default {
 		notification: null,
 		allSearching: false,
 		modal: null,
+		showAllResults: true,
+		isMac: false,
 	}),
+	computed: {
+		filteredSentences() {
+			return this.audit.sentences.filter(s => this.showAllResults || s.resultsOnGoogle > 0)
+		},
+		auditProgress() {
+			const sentences = this.audit.sentences.length
+			const sentencesAudited = this.audit.sentences.filter(s => s.resultsOnGoogle >= 0 && s.searchStatus !== 'none').length
+			return sentencesAudited / sentences
+		},
+		auditProgressPercent() {
+			return this.auditProgress >= 1 ? '100' : Number(this.auditProgress * 100).toFixed(2)
+		},
+	},
 	methods: {
 		async startSearchAll() {
 			this.allSearching = true
-			let nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none') 
+			let nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')
+			if (!nextSentenceToSearch) {
+				for (const s of this.audit.sentences) {
+					s.resultsOnGoogle = null
+					s.searchStatus = 'none'
+				}
+				this.$server.send('audit:reset')
+				nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')
+			}
 			while (this.allSearching && nextSentenceToSearch) {
 				try {
 					await this.testGoogleSearch(nextSentenceToSearch)
@@ -94,6 +134,7 @@ export default {
 					break
 				}
 			}
+			this.allSearching = false
 		},
 		stopSearchAll() {
 			this.allSearching = false
@@ -181,6 +222,7 @@ export default {
 		document.addEventListener('paste', (e) => this.onPasteData(e))
 		this.$server.invoke('boot').then((bootData) => {
 			this.audit = bootData.currentAudit
+			this.isMac = bootData.isMac
 		}).finally(() => {
 			this.loading = false
 			setTimeout(() => {
@@ -215,6 +257,27 @@ body {
 }
 svg {
 	fill: #F6AC5E;
+}
+.progressbar {
+	height: 30px;
+	width: 100%;
+	border: 1px solid #F6AC5E;
+	border-radius: 4px;
+	position: relative;
+	&-value {
+		height: 100%;
+		display: inline-block;
+		background-color: #F6AC5E;
+		transition: width 0.1s;
+	}
+	&-text {
+		position: absolute;
+		text-align: center;
+		width: 100%;
+		font-size: 0.8em;
+		margin-top: -5px;
+	}
+	margin-bottom: 30px;
 }
 .notification {
 	position: fixed;
@@ -326,6 +389,9 @@ svg {
 			justify-content: space-between;
 			.ui-button {
 				margin-right: 10px;
+				&:last-child {
+					margin-right: 0;
+				}
 			}
 			padding-bottom: 1em;
 		}

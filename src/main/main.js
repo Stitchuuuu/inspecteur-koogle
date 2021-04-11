@@ -381,6 +381,7 @@ app.whenReady().then(async() => {
 		await loadState()
 		return {
 			currentAudit,
+			isMac,
 		}
 	})
 	ipcMain.handle('text:parse', async (e, data) => {
@@ -402,6 +403,14 @@ app.whenReady().then(async() => {
 			console.error(e)
 			throw e
 		}
+	})
+	ipcMain.on('audit:reset', async () => {
+		if (!currentAudit) return
+		for (const s of currentAudit.sentences) {
+			s.resultsOnGoogle = null
+			s.searchStatus = 'none'
+		}
+		saveState()
 	})
 	ipcMain.handle('sentence:googleSearch', async (e, sentence) => {
 		const w = {

@@ -7,6 +7,9 @@ import path from 'path'
 const pt = platform()
 const isMac = pt === 'darwin'
 // const isWindows = pt === 'win32'
+
+const APP_WINDOW_NAME = 'Inspecteur Google - Détecteur anti-plagiat'
+
 const IS_DEV = !((app && app.isPackaged) || process.env.NODE_ENV === 'production')
 if (!IS_DEV && app && app.isPackaged && !process.env.NODE_ENV) {
 	process.env.ENV = 'production'
@@ -98,6 +101,7 @@ function createWindow(relativeURL, options) {
 	const opts = {
 		width: 800,
 		height: 640,
+		title: APP_WINDOW_NAME,
 		...options,
 	}
 	// Create the browser window.
@@ -105,6 +109,7 @@ function createWindow(relativeURL, options) {
 		width: opts.width,
 		height: opts.height,
 		show: true,
+		title: opts.title,
 		webPreferences: {
 			nodeIntegration: true,
 			enableRemoteModule: true,
@@ -129,6 +134,7 @@ function createGoogleSearchWindow() {
 		width: 640,
 		height: 480,
 		show: false,
+		title: 'Recherche Google',
 		webPreferences: {
 			nodeIntegration: true,
 			enableRemoteModule: true,

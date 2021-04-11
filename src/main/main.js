@@ -154,7 +154,9 @@ function id(prefix) {
 }
 
 
-app.whenReady().then(() => {
+app.whenReady().then(async() => {
+	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.7_0')
+
 	session.defaultSession.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
 		let cancel = false
 		if (googleClient && details.webContentsId) {

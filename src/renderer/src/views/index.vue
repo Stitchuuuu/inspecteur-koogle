@@ -29,10 +29,12 @@
 					<h1><span>{{ audit.quotes.length }}</span> citations trouvées</h1>
 					<h1><span>{{ audit.sentences.length }}</span> phrases / partie de phrase trouvées</h1>
 					<div>
-						<div v-for="sentence in audit.sentences" :key="sentence.id" class="sentence">
-							<div class="copy" @click="copySentence(sentence)">C</div>
+						<div v-for="sentence in audit.sentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0}">
+							<div class="copy" @click="copySentence(sentence)" :class="{'loader': sentence.searchLoading }">
+								<template v-if="!sentence.searchLoading">C</template>
+							</div>
 							<div class="text" @click="copySentence(sentence)">{{ sentence.sentence }}</div>
-							<div v-if="sentence.resultsOnGoogle !== null" class="results">{{ sentence.resultsOnGoogle }}</div>
+							<div v-if="sentence.resultsOnGoogle !== null && sentence.resultsOnGoogle > 0" class="results" :class="{'high': sentence.resultsOnGoogle.toString().length > 5, 'veryhigh': sentence.resultsOnGoogle.toString().length > 8}">{{ sentence.resultsOnGoogle }}</div>
 							<div class="actions">
 								<ui-button>T</ui-button>
 								<ui-button type="link" :external="true" :href="generateGoogleSearchLink(sentence.sentence)">G</ui-button>
@@ -212,6 +214,16 @@ svg {
 .sentence {
 	background-color: #f6ac5e;
 	color: #091044;
+	&.success {
+		background-color: #3F910C;
+	}
+	&.error {
+		background-color: #451E10;
+		color: white;
+		.ui-button {
+			color: white;
+		}
+	}
 	padding: 10px;
 	display: flex;
 	align-items: center;
@@ -228,6 +240,35 @@ svg {
 	}
 	.copy {
 		cursor: pointer;
+		width: 20px;
+		&.loader::after {
+			height: 12px;
+			width: 12px;
+			margin-left: 0;
+		}
+	}
+	.results {
+		background-color: rgba(0,0,0,0.1);
+    padding: 0.2em;
+    font-size: 0.9em;
+    width: 60px;
+    height: 28px;
+    text-align: center;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+		&.high {
+			font-size: 0.7em;
+		}
+		&.veryhigh {
+			font-size: 0.5em;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			text-align: left;
+		}
 	}
 	.actions {
 		font-size: 0.75em;

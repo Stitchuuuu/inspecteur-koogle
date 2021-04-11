@@ -36,7 +36,7 @@
 							<div class="text" @click="copySentence(sentence)">{{ sentence.sentence }}</div>
 							<div v-if="sentence.resultsOnGoogle !== null && sentence.resultsOnGoogle > 0" class="results" :class="{'high': sentence.resultsOnGoogle.toString().length > 5, 'veryhigh': sentence.resultsOnGoogle.toString().length > 8}">{{ sentence.resultsOnGoogle }}</div>
 							<div class="actions">
-								<ui-button>T</ui-button>
+								<ui-button @click="testGoogleSearch(sentence)">T</ui-button>
 								<ui-button type="link" :external="true" :href="generateGoogleSearchLink(sentence.sentence)">G</ui-button>
 							</div>
 						</div>
@@ -65,6 +65,23 @@ export default {
 		notification: null,
 	}),
 	methods: {
+		testGoogleSearch: function(s) { return new Promise((resolve, reject) => {
+			s.searchLoading = true
+			this.$server.invoke('sentence:googleSearch', {
+				id: s.id,
+				sentence: s.sentence,
+			}).then(data => {
+				s.resultsOnGoogle = data.resultsOnGoogle
+				s.searchStatus = 'success'
+				resolve()
+			}).catch(err => {
+				s.searchStatus = 'failed'
+				console.error(err)
+				reject(err)
+			}).finally(() => {
+				s.searchLoading = false
+			})
+		})},
 		async copySentence(s) {
 			await navigator.clipboard.writeText(s.sentence)
 			this.pushNotification('Le texte a été copié !')

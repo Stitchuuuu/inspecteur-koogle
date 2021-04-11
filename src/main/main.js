@@ -65,35 +65,16 @@ function createGoogleSearchWindow() {
 	const uri = new URL('https://www.google.fr/search')
 	uri.search = new URLSearchParams({
 		// Exact search only
-		tbs: 'li:1'
+		tbs: 'li:1',
 	})
 	win.loadURL(uri.toString())
+	return win
 }
 let googleClient = null
 
 async function OnGoogleClientReady() {
-	const text = `1. Evolution du rapport entre le salarié et le travail
-	Les conditions de travail se sont améliorées en 50 ans. Jusqu'au début des années 1900, les théories de l'organisation du travail s'inscrivent dans le courant de l'école classique. Il y a une division horizontale du travail importante car celui-ci est décomposé, les tâches sont segmentées, morcelées. C'est la période du taylorisme qui se définit par le travail à la chaîne, par pièces où c'est la force physique, l'activité manuelle qui dominent. On parlera de pénibilité du travail. Concernant la division verticale du travail, les rapports hiérarchiques s'établissent entre chef et ouvriers. La distribution du travail se fait par une transmission d'ordres et la définition stricte des tâches permet au premier de pouvoir mieux contrôler les seconds. L'homme est "un muscle" obéissant. Les progrès technologiques et les changements culturels ont toujours influencé l’évolution des salariés dans le monde, mais désormais une transformation encore plus rapide est en cours. L’adoption rapide des solutions de haute technologie apportant de nouvelles idées entraînent dans le monde entier d’importants changements dans le mode de vie et les méthodes de travail. Pour les dirigeants d’entreprise qui sont chargés de diriger des environnements de travail modernes, beaucoup de grandes questions restent prioritaires : Comment ces tendances font-elles évoluer les attentes des collaborateurs ? Comment les organisations peuvent-elles faire face aux mutations de l’environnement professionnel tout en restant à l’avant-garde de ces changements ? Aujourd’hui, nos environnements de travail modernes n’ont plus rien à voir avec l’époque où le travail se déroulait à horaires fixes, toujours au même endroit. Les collaborateurs ont plus de contrôle et d’autonomie sur leur manière de travailler, décidant en grande partie comment, quand et où ils travaillent. Les plans de carrière sont moins linéaires. Les individus cherchent un sens à leur travail, ainsi qu'une sécurité financière.
-	1.1. “Travailler”
-	“Travailler”, mot datant du XIème siècle, venant du latin populaire tripalariare, “torturer avec le tripalium”, un instrument de torture, un dispositif servant à`
-	const sentences = parseSentences(text)
-	console.log(sentences)
-	for (const s of sentences) {
-		try {
-			const res = await GoogleSearch(s, true)
-			if (!res.total) {
-				console.log(new Date(), `\x1b[32m[✓] ${s}\x1b[0m`)
-			} else {
-				console.log(new Date(), `\x1b[31m[x] {${res.total}} ${s}\x1b[0m`)	
-			}	
-		} catch (err) {
-			if (err.message.toLowerCase() === 'timeout') {
-				googleClient.window.show()
-			}
-			console.error(err.message)
-			break
-		}
-
+	if (prGoogleSearchInit) {
+		prGoogleSearchInit.resolve()
 	}
 }
 
@@ -153,6 +134,31 @@ function id(prefix) {
 	return prefix + time + random
 }
 
+let prGoogleSearchInit = null
+
+function GoogleSearchInit() {
+	if (googleClient && ~['search', 'ready'].indexOf(googleClient.state)) {
+		return Promise.resolve()
+	}
+	if (prGoogleSearchInit) return prGoogleSearchInit.promise
+	prGoogleSearchInit = {}
+	const pr = new Promise((resolve, reject) => {
+		prGoogleSearchInit.resolve = (v) => {
+			console.log('Resolving ?')
+			prGoogleSearchInit = null
+			resolve(v)
+		}
+		prGoogleSearchInit.reject = (v) => {
+			console.log('Rejecting ?')
+			prGoogleSearchInit = null
+			reject(v)
+		}
+	})
+	prGoogleSearchInit.promise = pr
+	createGoogleSearchWindow()
+	return pr
+}
+
 
 app.whenReady().then(async() => {
 	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.7_0')
@@ -192,15 +198,12 @@ app.whenReady().then(async() => {
 			lastStateUpdate: new Date(),
 			interval: setInterval(() => {
 				if (googleClient && googleClient.state !== 'ready' && (new Date() - googleClient.lastStateUpdate) > 1000 * 30) {
-					if (!googleClient.window.isVisible()) {
-						googleClient.window.show()
+					if (prGoogleSearchInit) {
+						prGoogleSearchInit.reject(new Error('An unknown error occurred.'))
 					}
 				} else if (googleClient.state === 'ready') {
 					clearInterval(googleClient.interval)
 					googleClient.interval = -1
-					if (!googleClient.window.isVisible()) {
-						googleClient.window.show()
-					}
 				}
 			}, 5000),
 		}
@@ -228,7 +231,9 @@ app.whenReady().then(async() => {
 	ipcMain.on('google:captcha', () => {
 		googleClient.state = 'captcha'
 		googleClient.window.setSize(640, 768)
-		googleClient.window.show()
+		if (prGoogleSearchInit) {
+			prGoogleSearchInit.reject(new Error('Captcha required.'))
+		}
 	})
 	ipcMain.handle('boot', async () => {
 		await loadState()
@@ -254,6 +259,25 @@ app.whenReady().then(async() => {
 		} catch (e) {
 			console.error(e)
 			throw e
+		}
+	})
+	ipcMain.handle('sentence:googleSearch', async (e, sentence) => {
+		if (!googleClient) {
+			console.log('awaiting google client ?')
+			await GoogleSearchInit()
+			console.log('awaited.')
+		}
+		const results = await GoogleSearch(sentence.sentence, true)
+		if (currentAudit && Array.isArray(currentAudit.sentences)) {
+			const s = currentAudit.sentences.find(s => s.id === sentence.id)
+			if (s) {
+				s.resultsOnGoogle = results.total
+				saveState()
+			}
+		}
+		return {
+			id: sentence.id,
+			resultsOnGoogle: results.total,
 		}
 	})
 	createWindow()

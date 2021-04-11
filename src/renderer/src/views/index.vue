@@ -30,6 +30,7 @@
 							</template>
 						</ui-button>
 						<ui-button v-else @click="stopSearchAll" class="loader">Stopper l'analyse</ui-button>
+						<ui-button @click="help = true">A l'aide !</ui-button>
 					</div>
 					<div>
 						<ui-button @click="audit = null">Charger un autre texte</ui-button>
@@ -64,6 +65,47 @@
 		</template>
 	</transition>
 	<transition name="fade-y">
+		<div v-if="help" class="help modal-container">
+			<div class="modal">
+				<div class="modal-title">Aide de l'application</div>
+				<div class="modal-content">
+					<div>
+						Cette application permet d'analyser un texte phrase par phrase et de détecter si ces phrases apparaissent sur Google, afin de se prémunir des logiciels anti-plagiats. 
+						La méthode n'étant pas divulgée par ces logiciels, ce test n'est donc pas véridique à 100%, mais permet déjà d'obtenir les phrases trouvables mot à mot sur Google, afin de les modifier.</div>
+					<div>
+						<span><ui-button>Lancer l'analyse</ui-button></span>
+						<span>Permet de lancer l'analyse de toute les phrases</span>
+					</div>
+					<div>
+						<span><ui-button><icon src="@/assets/icons/copy.svg" /></ui-button></span>
+						<span>Permet de copier la phrase dans le presse-papier. Tu peux aussi cliquer sur la phrase pour la copier.</span>
+					</div>
+					<div>
+						<span><div class="results">42</div></span>
+						<span><strike>La réponse</strike><br/>Nombre de résultats trouvés sur Google pour la phrase</span>
+					</div>
+					<div>
+						<span><ui-button><icon src="@/assets/icons/search.svg" /></ui-button></span>
+						<span>Analyse une phrase en particulier.</span>
+					</div>
+					<div>
+						<span><ui-button><icon src="@/assets/icons/google.svg" /></ui-button></span>
+						<span>Ouvre une page avec la recherche Google pour la phrase</span>
+					</div>
+					<div class="version">
+						<span>Développé par <ui-button type="link" :external="true" href="https://twitter.com/StitchuOfficiel">Stitchu</ui-button></span>
+						<span>Version {{ appVersion }}</span>
+					</div>
+				</div>
+				<div class="modal-actions">
+					<ui-button @click="help = false">
+						Ok
+					</ui-button>
+				</div>
+			</div>
+		</div>
+	</transition>
+	<transition name="fade-y">
 		<div v-if="modal" class="modal-container">
 			<div class="modal">
 				<div v-if="modal.title" class="modal-title">{{ modal.title }}</div>
@@ -89,16 +131,19 @@ import icon from '@/components/icon'
 export default {
 	name: 'Home',
 	data: () => ({
+		isMac: false,
+		audit: null,
+		appVersion: '',
+
 		loading: false,
 		loaded: false,
 		loadingText: false,
 		error: null,
-		audit: null,
 		notification: null,
 		allSearching: false,
 		modal: null,
 		showAllResults: true,
-		isMac: false,
+		help: false,
 	}),
 	computed: {
 		filteredSentences() {
@@ -224,6 +269,7 @@ export default {
 		this.$server.invoke('boot').then((bootData) => {
 			this.audit = bootData.currentAudit
 			this.isMac = bootData.isMac
+			this.appVersion = bootData.version
 		}).finally(() => {
 			this.loading = false
 			setTimeout(() => {
@@ -335,6 +381,51 @@ svg {
 		}
 	}
 }
+.help {
+	.modal-content {
+		> div {
+			display: flex;
+			align-items: center;
+			margin-top: 10px;
+			span:last-child {
+				margin-left: 10px;
+			}
+			&.version {
+				font-size: 0.9em;
+				margin-top: 20px;
+				justify-content: space-between;
+				a.ui-button {
+					background-color: transparent;
+					text-decoration: underline;
+					display: inline;
+					padding: 0;
+					margin: 0;
+					font-size: 1em;
+				}
+			}
+		}
+		.ui-button {
+			font-size: 0.9em;
+			background-color: rgba(0,0,0,0.1);
+			&:hover {
+				background-color: rgba(0,0,0,0.3);
+			}
+		}
+		.results {
+			background-color: rgba(0,0,0,0.1);
+			padding: 0.2em;
+			font-size: 0.9em;
+			width: 44px;
+			height: 28px;
+			text-align: center;
+			box-sizing: border-box;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: bold;
+		}
+	}
+}
 .home {
 	.steps {
 		flex: 1;
@@ -443,10 +534,10 @@ svg {
 	}
 	.results {
 		background-color: rgba(0,0,0,0.1);
-    padding: 0.2em;
-    font-size: 0.9em;
-    width: 60px;
-    height: 28px;
+		padding: 0.2em;
+		font-size: 0.9em;
+		width: 60px;
+		height: 28px;
     text-align: center;
     box-sizing: border-box;
     display: flex;

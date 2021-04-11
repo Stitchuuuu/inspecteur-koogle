@@ -382,6 +382,7 @@ app.whenReady().then(async() => {
 		return {
 			currentAudit,
 			isMac,
+			version: app.getVersion(),
 		}
 	})
 	ipcMain.handle('text:parse', async (e, data) => {

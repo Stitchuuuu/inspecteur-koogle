@@ -4,6 +4,7 @@ process.once('loaded', () => {
 		require('electron').ipcRenderer.send('main:log', ...args)
 	}
 	global.log = log
+	window.openExternal = require('electron').shell.openExternal
 
 	const { remote } = require('electron')
 	const win = remote.getCurrentWindow()

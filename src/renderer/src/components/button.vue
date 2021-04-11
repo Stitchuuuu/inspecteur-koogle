@@ -1,5 +1,5 @@
 <template>
-  <component :is="type === 'link' ? 'a' : type" class="ui-button" v-bind="$attrs">
+  <component :is="type === 'link' ? 'a' : type" class="ui-button" @click="openLink" v-bind="$attrs">
 		<slot/>
 	</component>
 </template>
@@ -13,7 +13,17 @@ export default {
 			type: String,
 			default: 'button',
 		},
+		external: Boolean
 	},
+	methods: {
+		openLink(e) {
+			if (this.type === 'link' && this.external && typeof window.openExternal === 'function') {
+				e.preventDefault()
+				e.stopImmediatePropagation()
+				window.openExternal(e.target.href)
+			}
+		}
+	}
 }
 </script>
 
@@ -34,6 +44,7 @@ export default {
 	font-size: 1em;
 	color: black;
 	transition: background-color 0.3s;
+	text-decoration: none;
 	&.fullwidth {
 		display: block;
 	}

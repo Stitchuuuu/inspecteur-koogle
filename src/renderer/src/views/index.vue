@@ -35,7 +35,7 @@
 							<div v-if="sentence.resultsOnGoogle !== null" class="results">{{ sentence.resultsOnGoogle }}</div>
 							<div class="actions">
 								<ui-button>T</ui-button>
-								<ui-button>G</ui-button>
+								<ui-button type="link" :external="true" :href="generateGoogleSearchLink(sentence.sentence)">G</ui-button>
 							</div>
 						</div>
 					</div>
@@ -73,6 +73,11 @@ export default {
 			this._notification_timeout = setTimeout(() => {
 				this.notification = ''
 			}, 2000)
+		},
+		generateGoogleSearchLink(text) {
+			const t = `"${text}"`
+			const params = `q=` + encodeURIComponent(t) + '&tbs=' + encodeURIComponent('li:1')
+			return `https://www.google.fr/search?` + params
 		},
 		async onPasteData(e) {
 			this.error = null

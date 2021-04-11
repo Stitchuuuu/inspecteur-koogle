@@ -36,9 +36,9 @@ function createWindow(relativeURL, options) {
 			enableRemoteModule: true,
 			preload: IS_DEV ?
 				path.join(app.getAppPath(), 'src', 'renderer', 'public', 'preload.js') : 
-				path.join(app.getAppPath(), 'renderer', 'preload.js')
+				path.join(app.getAppPath(), 'renderer', 'preload.js'),
 		},
-		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png')
+		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png'),
 	})
 	show(win, relativeURL)
 	if (IS_DEV) {
@@ -55,9 +55,9 @@ function createGoogleSearchWindow() {
 			enableRemoteModule: true,
 			preload: IS_DEV ?
 				path.join(app.getAppPath(), 'src', 'renderer', 'public', 'preload-google.js') : 
-				path.join(app.getAppPath(), 'renderer', 'preload-google.js')
+				path.join(app.getAppPath(), 'renderer', 'preload-google.js'),
 		},
-		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png')
+		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png'),
 	})
 	if (IS_DEV) {
 		win.openDevTools({ mode: 'detach' })

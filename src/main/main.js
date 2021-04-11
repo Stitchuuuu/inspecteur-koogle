@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron'
 import { platform } from 'os'
+import fs from 'fs'
 import worker from './worker.js'
 import path from 'path'
 
@@ -23,7 +24,7 @@ function createWindow(relativeURL, options) {
 	const opts = {
 		width: 800,
 		height: 640,
-		...options
+		...options,
 	}
 	// Create the browser window.
 	const win = new BrowserWindow({
@@ -95,6 +96,29 @@ async function OnGoogleClientReady() {
 
 	}
 }
+
+let currentAudit = null
+
+function saveState() {
+	const p = path.join(app.getPath('userData'), 'data.json')
+	fs.writeFileSync(p, JSON.stringify({
+		currentAudit,
+	}, null, 2))
+}
+
+const loadState = () => ( new Promise((resolve, reject) => {
+	const p = path.join(app.getPath('userData'), 'data.json')
+	fs.access(p, fs.constants.F_OK, (err) => {
+		if (err) return resolve({})
+		fs.readFile(p, (err, buffer) => {
+			if (err) return reject(err)
+			const data = JSON.parse(buffer.toString())
+			currentAudit = data.currentAudit
+			resolve(data)
+		})
+	})
+}))
+
 ipcMain.on('main:log', (e, args) => {
 	console.log.apply(console, args)
 })
@@ -120,6 +144,15 @@ function GoogleSearch(text, exact) {
 	
 	})
 }
+function id(prefix) {
+	const time = Date.now().toString(36)
+	const random = Number(Math.random()*1_000_000_000).toString(36)
+	if (!prefix) {
+		prefix = ''
+	}
+	return prefix + time + random
+}
+
 
 app.whenReady().then(() => {
 	session.defaultSession.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
@@ -167,7 +200,7 @@ app.whenReady().then(() => {
 						googleClient.window.show()
 					}
 				}
-			}, 5000)
+			}, 5000),
 		}
 	})
 	ipcMain.on('google:search', () => {
@@ -195,13 +228,30 @@ app.whenReady().then(() => {
 		googleClient.window.setSize(640, 768)
 		googleClient.window.show()
 	})
-	ipcMain.on('text:parse', async (e, data) => {
+	ipcMain.handle('boot', async () => {
+		await loadState()
+		return {
+			currentAudit,
+		}
+	})
+	ipcMain.handle('text:parse', async (e, data) => {
 		try {
-			console.log('beginning?')
-			const d = await worker('text-parse', data)
-			console.log(d)
+			const results = await worker('text-parse', data)
+			currentAudit = {
+				quotes: results.quotes,
+				sentences: results.sentences.map(s => ({ 
+					id: id('s-'),
+					sentence: s, 
+					resultsOnGoogle: null, 
+					searchLoading: false,
+					searchStatus: 'none',
+				})),
+			}
+			saveState()
+			return currentAudit
 		} catch (e) {
-			console.log(e)
+			console.error(e)
+			throw e
 		}
 	})
 	createWindow()

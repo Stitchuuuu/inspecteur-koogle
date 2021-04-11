@@ -33,7 +33,7 @@ module.exports = {
 			"^/\\..*",
 			"log.txt"
 		],
-		"icon": "assets/RoundedAppIcon.icns"
+		"icon": "assets/rounded-icon.icns"
 	},
 	makers: [
 		{

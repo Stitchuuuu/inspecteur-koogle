@@ -4,11 +4,11 @@
 <script>
 export default {
 	created() {
+		let url = '/'
 		if (location.hash) {
-			let url = '/'
 			url += location.hash.substr(1)
-			this.$router.push(url)
 		}
+		this.$router.push(url)
 		this.$server.send('main:register-events')
 	}
 }

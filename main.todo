@@ -1,180 +1,33 @@
-v0.1.0-beta1
-[ ] Tray Icon
-	[ ] Hide Super Overlay / Show
-	[ ] Editer Super Overlay
-	[ ] quitter
-[ ] Home Page
-	[x] Se connecter / Déconnecter Twitch
-	[ ] Modal
-	[ ] Paramètres Twitch
-	[ ] Modal Paramètres Twitch
-		[ ] Chat Channels
-			[ ] Suivre les messages de la chaîne : X
-			[ ] Ajouter une nouvelle chaîne
-			[ ] Ré-initialiser
-		[ ] Temps de rafraichissements des derniers follows : input nombre, default: 10s
-	[ ] Bouton Afficher/Cacher Super Overlay
-	[ ] Bouton Configurer Super Overlay / Arrêter la configuration
-	[ ] Bouton Evènements ? A voir
-[ ] Extension Twitch
-	[ ] Subscribe to follows
-		[ ] event follow when new follow
-		[ ] first time, get last follows in events, marked as unread:false
-	[ ] TwitchChat to Events:
-		[ ] raid
-		[ ] host
-		[ ] cheer
-		[ ] sub
-	[ ] event
-		[ ] type
-		[ ] unread
-		[ ] user
-		[ ] type host/raid: total for total viewers
-		[ ] type cheer: total for total cheers
-		[ ] type sub: subscribeType: prime, 1month, etc...
-		[ ] date
-	[ ] pas de sauvegarde pour le moment, tout est en live uniquement
-	
-[ ] Overlay
-	[ ] Evènements
-		[ ] Ecouter Twitch Events + Twitch Chat messages
-			[ ] Regrouper les évènements par type: follow, cheers, messages, abonnement, host, raide
-			[ ] Chaque type aura:
-				[ ] Une icône spécifique
-				[ ] Un badge avec le nombre non lu
-				[ ] Un bouton "Lu" ou "croix" à gauche pour l'enlever
-				[ ] Le contenu du message
-					[ ] 2 lignes par évènements minimum en taille
-					[ ] Bouton "cliquer pour voir tout" ou indice, lors du clic, ca va tout afficher, jusqu'à la limite de la fenêtre principale
-						[ ] Des boutons Haut/Bas pour le scroll à prévoir ?
-						[ ] Scroller avec molette, uniquement le contenu (les boutons à gauche ne changeront pas de place
-						[ ] On peut unread chaque message indépendamment
-					[ ] il y a x secondes/minutes/heure
-			[ ] Les raid/host clignoteront, et seront en tête de liste
-			[ ] Ensuite, les follows, subs, cheers
-			[ ] Puis les messages
-			
-	[ ] En mode configurer: Pouvoir bouger la fenètre eèvenements + la redimensionner
-	[ ] En mode configurer: Pouvoir tester et afficher des évènements fake (peut être ajouter un bouton dans la home page)
-	[ ] En mode configurer: Pouvoir agrandir / réduire la taille de police
+[ ] finalisation 1.0.0-alpha.0
+	[ ] Nom de l'app dans la Main Window : Inspecteur Google : détecteur anti plagiat
+	[ ] Icône de l'app: Detective/Spy + Logo Google
+	[ ] Bundle + test
+[x] Recommencer l'analyse
+	[x] Changer bouton "Lancer" en "Recommencer l'analyse" si complété à 100%
+	[x] Changer l'état de toute les sentences côté Main
+[x] Icônes
+	[x] Copy
+	[x] Cmd (mac)
+	[x] Search (loop)
+	[x] Google
+[X] Modal "help"
+[x] After parse
+    [x] Send all sentences & quotes
+    [x] Display total of sentences
+    [x] Display quotes (closed): Ces citations / mots ont été exclues
+    [x] Button "Tester tout sur Google"
+    [x] Display all sentences
+        [x] Each sentence has
+            [x] Test/Re-Test
+            [x] Voir sur Google
+            [x] Check/Error
+            [x] Number of results
+            [x] La phrase, avec un cursor:pointer et une icone "copier" a côté
 
+    [x] Handle "text:search"
+    [x] async function: startGoogleEngine, qui peut throw une erreur d'initialisation
+    [x] Bouton "Tester tout sur google"
+    [x] Sauvegarder au fur et à mesure la progression
+    [x] Recharger automatiquement la dernière progression
+    [x] Bouton "recommencer un test"
 
-
-[x] Tray Icon + Exit
-[x] Icons Windows / Mac
-[ ] extension:update
-	[ ] Action check update
-		[ ] Contact an URL /versions.json
-		[ ] Check if we have the last version, while creating each line with a version of major, minor, patch, beta, alpha
-		[ ] If we dont have the last, send the version
-	[ ] Action update(version)
-		[ ] Update to the specific version
-		[ ] Get the file specified in versions.json for the platform
-		[ ] Create & compare the sha1
-			[ ] If sha1 different, retry download
-		[ ] If sha1 correct, unzip into app path
-		[ ] then relaunch the app
-	[ ] Server side
-		[ ] When creating the update, create a sha1 of the tgz, and put into .tgz.sha1
-		[ ] Create a specific node process
-			[ ] That check in a folder the files
-			[ ] If a new file exists (app-X.Y.Z-platform-arch.tgz), check the sha1 + update the versions.json
-				[ ] Array[
-						{ platform: platform.arch, version: X.Y.Z, sha1: }
-					 ] sortby version desc
-[ ] Main Page
-	[ ] At bottom, display the version + icon refresh (extension check:update, then update if user confirm)
-	[ ] Modal: Overlay black, + div
-	[ ] Confirm: Modal with two buttons, 1 text
-[ ] Overlay
-	[ ] Only 1 plugin: events
-		[ ] Follow event
-		[ ] Host event
-		[ ] Raid event
-		[ ] Chat event: can regroup multiple chats with a number of notification
-			[ ] when clicked; all unread message are displayed
-[ ] Main Page / Config Page
-	[ ] Button Connexion Twitch / Déconnecter Twitch
-	[ ] Button Editer / Verouiller overlay
-	[ ] Button Fermer l'overlay / Ouvrir overlay
-	[ ] Button Logs
-	[ ] Bouton "Ré-initialiser"
-	[ ] Bouton Supprimer historique chat Twitch
-[ ] Overlay Page
-	[ ] Plugin Chat
-		[ ] Afficher les derniers messages du chat (order du plus vieux au plus récent)
-		[ ] Chaque message peut être "lu" avec une icône sur la droite
-		[ ] Quand il est lu il disparait de la liste
-		[ ] Bouton "Voir tout les messages" qui affichera ceux caché
-		[ ] Bouton "Cacher messages lus"
-		[ ] Possibilité de scroller en mode "tous" ?, bouton "haut" / "bas" pour remonter un message par message
-	[ ] Plugin derniers évènements
-		[ ] Affiche les derniers évènements Twitch: Raid, Host, Follows (pour le moment)
-		[ ] Chaque évènement peut être "Lu", il sera caché ensuite
-		[ ] Bouton "Tous" /  "Non lu" qui alterne entre tout les évènements et ceux non lus
-		[ ] Possibilité de scroller en mode "lu" ?
-	[ ] Pouvoir augmenter la taille de police facilement en mode "édition"
-	[ ] Plugin "Menu"
-		[ ] Icone pour : Editer / Verouiller l'Overlay
-		[ ] Icone pour quitter l'overlay
-[ ] Twitch Extension
-	[ ] Récupérer les derniers follows
-	[ ] Récupérer les hosts / raids
-	[ ] Enregistrer les messages du chats dans un fichier pour pouvoir les recharger
-	[ ] Enregistrer les evenements dans un fichier pour pouvoir les recharger
-
-
-[ ] v0.2.0
-	[ ] Websocket Server faisant la même chose qu'IPC
-	[ ] HTTP server servant uniquement les fichiers du renderer
-	[ ] Pouvoir créer d'autres overlay
-	[ ] Plugin Overlay "Objectif follow"
-		[ ] Pouvoir paramétrer un plugin
-		[ ] Ce plugin:
-			[ ] Couleur de fond
-			[ ] Couleur progression
-			[ ] Police
-			[ ] Texte ?
-		[ ] Taille du texte dépend de la taille de la fenêtre comme la barre
-	[ ] Lien rapide vers Plugin, localhost/index.html#url/vers/plugin
-
-
-
-[ ] Fenêtre principale permettant de configurer l'overlay
-    [ ] Module, theme, etc...
-    [ ] Se connecter sur Streamlabs / Twitch
-[ ] Fenêtre overlay, non clickable de base
-    [ ] des composants draggable partout + resizable
-    [ ] Un composant classique "fenêtre web" ou on peut rentrer une URL
-[ ] Fenêtre "unlock/lock" pour avoir cliquer sur l'overlay, et bouger/redim les fenêtres (voir ajouter plus tard)
-
-[ ] Raccourci globaux, pour pouvoir contrôler chaque module
-[ ] Possibilité de créer ses propres modules
-[ ] Un module
-    [ ] Doit importer un composant VueJS <bloby-overlay-modal>
-    [ ] Il y a 2 contenu, le conteu cliquable, et le contenu non cliquable
-    [ ] Peut être bougé, redimensionner, a un nom
-    [ ] Comment importer des modules à chaud ?
-
-
-[ ] External plugin
-    [ ] background/
-    [ ] renderer/
-    [ ] utiliser "require('npm')" pour installer les packages manquants, nécessitera un reload
-        https://stackoverflow.com/questions/20686244/install-programmatically-a-npm-package-providing-its-version
-    
-    [ ] Tester un plugin en live:
-        [ ] Vue plugin live:
-            https://codepen.io/getreworked/pen/XZOgbm?editors=1010
-        [ ] NodeJS: child_process.fork 
-
-        [ ] Path vers le plugin
-        [ ] dist/renderer.js
-        [ ] dist/background.js
-        [ ] dist/renderer.css
-        [ ] dist/package.json
-
-        [ ] auto-live generate
-            [ ] vue-cli-service pour renderer/index.js
-            [ ] webpack pour background/
-        [ ] A chaque changement, reload le plugin ?

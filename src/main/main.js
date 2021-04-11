@@ -70,10 +70,8 @@ function applicationMenu() {
 					enabled: !!googleClient,
 				},
 				{ role: 'reload', label: 'Rafraichir' },
-				...(!IS_DEV ? [] : [
-					{ type: 'separator' },
-					{ role: 'toggleDevTools' },
-				]),
+				{ type: 'separator' },
+				{ role: 'toggleDevTools' },
 			],
 		},
 		{
@@ -117,7 +115,7 @@ function createWindow(relativeURL, options) {
 				path.join(app.getAppPath(), 'src', 'renderer', 'public', 'preload.js') : 
 				path.join(app.getAppPath(), 'renderer', 'preload.js'),
 		},
-		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png'),
+		icon: path.join(app.getAppPath(), isMac ? 'assets/rounded-icon.icns' : 'assets/icon.png'),
 	})
 	win.setMenu(applicationMenu())
 	show(win, relativeURL)
@@ -142,7 +140,7 @@ function createGoogleSearchWindow() {
 				path.join(app.getAppPath(), 'src', 'renderer', 'public', 'preload-google.js') : 
 				path.join(app.getAppPath(), 'renderer', 'preload-google.js'),
 		},
-		icon: path.join(app.getAppPath(), isMac ? 'assets/RoundedAppIcon.icns' : 'assets/icon.png'),
+		icon: path.join(app.getAppPath(), isMac ? 'assets/rounded-icon.icns' : 'assets/icon.png'),
 	})
 	win.on('close', (e) => {
 		if (appWindow) {

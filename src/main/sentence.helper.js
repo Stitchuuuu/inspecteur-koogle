@@ -39,7 +39,7 @@ function parseSentences(text) {
 	const results = []
 	while (sentences.length) {
 		let s = sentences.shift()
-		const listMatches = /^\s*[-●.]\s*(.*)/gsm.exec(s)
+		const listMatches = /^\s*[-●•.]\s*(.*)/gsm.exec(s)
 		s = listMatches && listMatches[1] || s
 		if (!s) continue
 		const words = getWords(s)

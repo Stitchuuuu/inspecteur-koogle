@@ -33,21 +33,24 @@ module.exports = {
 			"^/\\..*",
 			"log.txt"
 		],
-		"icon": "assets/rounded-icon.icns"
+		"name": "Inspecteur Koogle",
+		"icon": "assets/icon"
 	},
 	makers: [
 		{
 			"name": "@electron-forge/maker-squirrel",
 			"config": {
-				"name": MAKER_APP_CONFIG_NAME
+				"name": MAKER_APP_CONFIG_NAME,
+				"description": "Outil permettant d'analyser les potentiels plagiats d'un texte"
 			}
 		},
 		{
-			"name": "@electron-forge/maker-zip",
-			"platforms": [
-				"darwin",
-				"linux"
-			]
+			"name": "@electron-forge/maker-dmg",
+			"platform": "darwin",
+			"config": {
+				"name": "Inspecteur Koogle",
+				"format": "ULFO"
+			}
 		},
 		{
 			"name": "@electron-forge/maker-deb",

@@ -91,9 +91,10 @@
 	document.addEventListener('DOMContentLoaded', async() => {
 		$ipc.send('google:init')
 		debuglog('IPC | Sent google:init')
-		if (document.querySelector('[role="dialog"] iframe[src*="consent.google."]')) {
+		if (document.querySelector('[role="dialog"] iframe[src*="consent.google."]') || document.querySelector('[role="dialog"] a[href*="policies.google."]')) {
 			$ipc.send('google:consent-window')
 			window.location = 'https://consent.google.com/d?gl=FR&m=0&pc=shp&uxe=4530818&hl=fr&src=2&continue=http://google.fr'
+			return
 		} else if (window.location.hostname.indexOf('consent.google') >= 0) {
 			debuglog('IPC | Consent Google ?')
 			// Consent window, we disable everything then we submit
@@ -103,6 +104,7 @@
 			}
 			const submit = document.querySelector('form button')
 			clickOn(submit, { delay: 500 })
+			return
 		} else if (!document.querySelector('#captcha-form')) {
 			// $log('Renderer | No captcha')
 			// Testing if there's a search

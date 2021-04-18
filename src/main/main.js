@@ -9,7 +9,7 @@ const isMac = pt === 'darwin'
 // const isWindows = pt === 'win32'
 const isBetaOrAlpha = (~app.getVersion().indexOf('-beta.') || ~app.getVersion().indexOf('-alpha.'))
 
-const APP_WINDOW_NAME = 'Inspecteur Google - Détecteur anti-plagiat'
+const APP_WINDOW_NAME = 'Inspecteur Koogle - Détecteur anti-plagiat'
 
 const IS_DEV = !((app && app.isPackaged) || process.env.NODE_ENV === 'production')
 if (!IS_DEV && app && app.isPackaged && !process.env.NODE_ENV) {
@@ -184,6 +184,8 @@ function OnGoogleClientReadyOrResults() {
 				cs.emit('captcha:done')
 			}
 		}
+	} else if (googleClient.wasConsented && googleClient.currentSearch && googleClient.state === 'ready') {
+		googleClient.emit('search', googleClient.currentSearch.text)
 	}
 }
 
@@ -234,6 +236,7 @@ function GoogleSearch(text, exact, options) {
 				timeout,
 				window: opts.window || null,
 				emit: opts.emit || null,
+				text,
 			}
 			googleClient.emit('search', text)
 		} else {
@@ -296,11 +299,19 @@ let appWindow = null
 app.whenReady().then(async() => {
 	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.7_0')
 	Menu.setApplicationMenu(applicationMenu())
+	session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+		const name = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json'))).name
+		if (details.requestHeaders['User-Agent']) {
+			details.requestHeaders['User-Agent'] = details.requestHeaders['User-Agent'].replace(new RegExp(name + '\\/[0-9a-z.-]+\\s', 'i'), '').replace(/Electron\/[0-9a-z.-]+\s/i, '')
+		}
+		callback({ cancel: false, requestHeaders: details.requestHeaders })
+	})
+
 	session.defaultSession.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
 		let cancel = false
 		if (googleClient && googleClient.webContents && details.webContentsId) {
 			if (googleClient.webContents.id === details.webContentsId) {
-				if (googleClient.state !== 'captcha' && !~['script, xhr'].indexOf(details.resourceType)) {
+				if (!~['consent-window', 'captcha'].indexOf(googleClient.state) && !~['script, xhr'].indexOf(details.resourceType)) {
 					cancel = true
 				}
 			}
@@ -327,7 +338,8 @@ app.whenReady().then(async() => {
 			frame: e.senderFrame,
 			window: BrowserWindow.fromWebContents(e.sender),
 			emit: e.reply,
-			state: 'init',
+			state: googleClient && googleClient.state ? googleClient.state : 'init',
+			wasConsented: googleClient ? googleClient.state === 'consent-window' : false,
 			wasReadyBefore: googleClient ? googleClient.state === 'ready' || googleClient.state === 'search' : false,
 			wasCaptchaBefore: googleClient ? googleClient.state === 'captcha' : false,
 			lastStateUpdate: new Date(),

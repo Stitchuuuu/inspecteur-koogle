@@ -2,7 +2,7 @@ const path = require('path')
 const fs = require('fs')
 const tar = require('tar')
 
-const MAKER_APP_CONFIG_NAME = 'inspecteur_google'
+const MAKER_APP_CONFIG_NAME = 'inspecteur_koogle'
 
 let package
 

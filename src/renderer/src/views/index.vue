@@ -40,19 +40,27 @@
 					<div class="progressbar-value" :style="{ width: auditProgressPercent + '%' }"></div>
 					<div class="progressbar-text">Analyse complétée à {{ auditProgressPercent }}%</div>
 				</div>
+				<div>
+					Pourcentage plagiat: {{ Number(cheatingPercent * 100).toFixed(2) }} %
+				</div>
+				<div class="separator"></div>
 				<div class="content">
-					<h1><span>{{ audit.quotes.length }}</span> citations ignorées</h1>
-					<h1><span>{{ audit.sentences.length }}</span> phrases / partie de phrase à analyser</h1>
+					<h1><span>{{ auditSentences.length }}</span> phrases / partie de phrase à analyser</h1>
 					<div>
 						<div class="table-actions">
-							<ui-button v-if="showAllResults" @click="showAllResults = !showAllResults">Voir uniquement les « plagiats »</ui-button>
-							<ui-button v-else @click="showAllResults = !showAllResults">Voir tout</ui-button>
+							<ui-button v-if="showAllResults" @click="showAllResults = !showAllResults">Afficher uniquement les « plagiats »</ui-button>
+							<ui-button v-else @click="showAllResults = !showAllResults">Afficher tout</ui-button>
+							<ui-button v-if="!showIgnored" @click="showIgnored = !showIgnored">Afficher les citations et parties ignorées</ui-button>
+							<ui-button v-else @click="showIgnored = !showIgnored">Cacher les citations et parties ignorées</ui-button>
 						</div>
-						<div v-for="sentence in filteredSentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0}">
+						<div v-for="sentence in filteredSentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0, 'ignored': sentence.type !== 'sentence'}">
 							<div class="copy" @click="copySentence(sentence)" :class="{'loader': sentence.searchLoading }">
 								<template v-if="!sentence.searchLoading"><icon src="@/assets/icons/copy.svg" /></template>
 							</div>
-							<div class="text" @click="copySentence(sentence)">{{ sentence.sentence }}</div>
+							<div class="text" @click="copySentence(sentence)">
+								<div>{{ sentence.sentence }}</div>
+								<div v-if="sentence.type !== 'sentence'" class="sentence-type">{{ sentence.type === 'quote' ? 'Citation' : 'Phrase courte / Titre / Numérotation' }} (ignorée)</div>
+							</div>
 							<div v-if="sentence.resultsOnGoogle !== null && sentence.resultsOnGoogle > 0" class="results" :class="{'high': sentence.resultsOnGoogle.toString().length > 5, 'veryhigh': sentence.resultsOnGoogle.toString().length > 8}">{{ sentence.resultsOnGoogle }}</div>
 							<div class="actions">
 								<ui-button @click="testGoogleSearch(sentence)"><icon src="@/assets/icons/search.svg" /></ui-button>
@@ -82,7 +90,7 @@
 					</div>
 					<div>
 						<span><div class="results">42</div></span>
-						<span><strike>La réponse</strike><br/>Nombre de résultats trouvés sur Google pour la phrase</span>
+						<span><strike>Le sens de la vie</strike><br/>Nombre de résultats trouvés sur Google pour la phrase</span>
 					</div>
 					<div>
 						<span><ui-button><icon src="@/assets/icons/search.svg" /></ui-button></span>
@@ -143,11 +151,19 @@ export default {
 		allSearching: false,
 		modal: null,
 		showAllResults: true,
+		showIgnored: false,
 		help: false,
 	}),
 	computed: {
+		cheatingPercent() {
+
+			const allWordsWithCheating = this.audit.sentences.filter(s => s.searchStatus !== 'none' && s.resultsOnGoogle > 0).reduce((v, s) => s.words + v, 0)
+			const allWords = this.audit.sentences.reduce((v, s) => s.words + v, 0)
+			console.log(allWordsWithCheating, allWords)
+			return allWordsWithCheating / allWords
+		},
 		filteredSentences() {
-			return this.audit.sentences.filter(s => this.showAllResults || s.resultsOnGoogle > 0)
+			return this.audit.sentences.filter(s => this.showIgnored || s.type === 'sentence').filter(s => this.showAllResults || s.resultsOnGoogle > 0)
 		},
 		auditProgress() {
 			const sentences = this.audit.sentences.length
@@ -157,23 +173,26 @@ export default {
 		auditProgressPercent() {
 			return this.auditProgress >= 1 ? '100' : Number(this.auditProgress * 100).toFixed(2)
 		},
+		auditSentences() {
+			return this.audit.sentences.filter(s => s.type === 'sentence')
+		}
 	},
 	methods: {
 		async startSearchAll() {
 			this.allSearching = true
-			let nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')
+			let nextSentenceToSearch = this.auditSentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')
 			if (!nextSentenceToSearch) {
-				for (const s of this.audit.sentences) {
+				for (const s of this.auditSentences) {
 					s.resultsOnGoogle = null
 					s.searchStatus = 'none'
 				}
 				this.$server.send('audit:reset')
-				nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')
+				nextSentenceToSearch = this.auditSentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')
 			}
 			while (this.allSearching && nextSentenceToSearch) {
 				try {
 					await this.testGoogleSearch(nextSentenceToSearch)
-					nextSentenceToSearch = this.audit.sentences.find(s => s.resultsOnGoogle === null)
+					nextSentenceToSearch = this.auditSentences.find(s => s.resultsOnGoogle === null)
 				} catch(err) {
 					console.error(err)
 					this.allSearching = false
@@ -197,7 +216,6 @@ export default {
 			}).catch(err => {
 				console.error(err)
 				if (~err.message.toLowerCase().indexOf('captcha')) {
-					console.log('hey?')
 					this.modal = {
 						title: 'Anti-bot détecté',
 						content: 'Un test anti-bot doit être résolu afin de poursuivre l\'analyse.',
@@ -475,6 +493,10 @@ svg {
 		flex-direction: column;
 		height: 100%;
 		flex: 1;
+		.separator {
+			margin-top: 10px;
+			border-bottom: 4px solid rgba(0, 0, 0, 0.9);
+		}
 		.content {
 			text-align: left;
 			overflow-y: auto;
@@ -482,6 +504,15 @@ svg {
 			width: 100%;
 			box-sizing: border-box;
 			padding-bottom: 2em;
+		}
+		.table-actions {
+			.ui-button {
+				margin-right: 10px;
+				&:last-child {
+					margin-right: 0;
+				}
+			}
+			margin-bottom: 20px;
 		}
 		> .actions {
 			display: flex;
@@ -509,6 +540,13 @@ svg {
 			color: white;
 		}
 	}
+	&.ignored {
+		background-color: rgba(0, 0, 0, 0.5);
+		color: #999999;
+		.ui-button {
+			color: #999999;
+		}
+	}
 	padding: 10px;
 	display: flex;
 	align-items: center;
@@ -522,6 +560,10 @@ svg {
 	.text {
 		flex: 1;
 		cursor: pointer;
+	}
+	&-type {
+		font-style: italic;
+		font-size: 0.8em;
 	}
 	.copy {
 		cursor: pointer;

@@ -408,10 +408,12 @@ app.whenReady().then(async() => {
 		try {
 			const results = await worker('text-parse', data)
 			currentAudit = {
-				quotes: results.quotes,
-				sentences: results.sentences.map(s => ({ 
+				originalData: data,
+				sentences: results.map(s => ({ 
 					id: id('s-'),
-					sentence: s, 
+					sentence: s.text,
+					type: s.type,
+					words: s.words, 
 					resultsOnGoogle: null, 
 					searchLoading: false,
 					searchStatus: 'none',

@@ -5,38 +5,22 @@ function getWords(s) {
 }
 
 function parseSentences(text) {
-	const quotes = []
-	const texts = [text]
-	const textsWithoutQuotes = []
-	let quoteMatch = /^(.*)([“«]([^«“”»]+)[”»])(.*)$/igs.exec(texts.pop())
+	let results = []
+	const reg = /([“«]([^«“”»]+)[”»])/igm
+	let quoteMatch = reg.exec(text)
+	let index = 0
 	while (quoteMatch) {
-		let [, part1, ,quote, part2] = quoteMatch
-		quotes.push(quote)
-		if (part1) {
-			texts.push(part1)
+		const [match, ,quote] = quoteMatch
+		if (index - quoteMatch.index !== 0) {
+			const previous = text.substring(index, quoteMatch.index)
+			results = [...results, ...parseSentences(previous)]
 		}
-		if (part2) {
-			texts.push(part2)
-		}
-		while (texts.length) {
-			const t = texts.pop()
-			quoteMatch = /(.*)?(“([^“”]+)”)(.*)?/gs.exec(t)
-			if (!quoteMatch) {
-				textsWithoutQuotes.push(t.trim())
-			} else {
-				break
-			}
-		}
+		results.push({ type: 'quote', words: getWords(quote).length, text: quote })
+		console.log(results)
+		index = quoteMatch.index + match.length
+		quoteMatch = reg.exec(text)
 	}
-	const sentences = []
-	for (const t of textsWithoutQuotes) {
-		const list = t.split(sentenceSplitter)
-		for (const s of list) {
-			sentences.push(s)
-		}
-	}
-
-	const results = []
+	const sentences = text.split(sentenceSplitter)
 	while (sentences.length) {
 		let s = sentences.shift()
 		const listMatches = /^\s*[-●•.]\s*(.*)/gsm.exec(s)
@@ -60,15 +44,13 @@ function parseSentences(text) {
 				sentences.unshift(subsentence.trim())
 			}
 		} else if (words.length <= 5) {
+			results.push({ type: 'short', words: words.length, text: s })
 			continue
 		} else {
-			results.push(s)
+			results.push({ type: 'sentence', words: words.length, text: s })
 		}
 	}
-	return { 
-		sentences: results,
-		quotes,
-	}
+	return results
 }
 
 module.exports = {

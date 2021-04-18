@@ -13,6 +13,7 @@ export default {
 			type: String,
 			default: 'button',
 		},
+		href: String,
 		external: Boolean
 	},
 	methods: {
@@ -20,7 +21,7 @@ export default {
 			if (this.type === 'link' && this.external && typeof window.openExternal === 'function') {
 				e.preventDefault()
 				e.stopImmediatePropagation()
-				window.openExternal(e.target.href)
+				window.openExternal(this.href)
 			}
 		}
 	}

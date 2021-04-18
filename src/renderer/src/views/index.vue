@@ -90,7 +90,7 @@
 					</div>
 					<div>
 						<span><div class="results">42</div></span>
-						<span><strike>Le sens de la vie</strike><br/>Nombre de résultats trouvés sur Google pour la phrase</span>
+						<span><span style="text-decoration: line-through">Le sens de la vie</span><br/>Nombre de résultats trouvés sur Google pour la phrase</span>
 					</div>
 					<div>
 						<span><ui-button><icon src="@/assets/icons/search.svg" /></ui-button></span>

@@ -48,7 +48,6 @@ module.exports = {
 			"name": "@electron-forge/maker-dmg",
 			"platform": "darwin",
 			"config": {
-				"name": "Inspecteur Koogle",
 				"format": "ULFO"
 			}
 		},

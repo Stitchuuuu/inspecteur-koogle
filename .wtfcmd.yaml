@@ -51,6 +51,7 @@
     npm run make:macos-m1
 
 - name: icon
+  desc: Create icon needed by the app from sources
   cmd: |
     convert src/assets/ico/32.png src/assets/ico/64.png src/assets/ico/128.png src/assets/ico/256.png src/assets/ico/512.png src/assets/ico/1024.png assets/icon.ico
     iconutil -c icns src/assets/rounded-icon.iconset --output assets/icon.icns
@@ -58,6 +59,7 @@
     cp src/assets/rounded-icon.iconset/icon_512x512@2x.png assets/rounded-icon.png
 
 - name: start
+  desc: Start the app in dev mode
   cmd: npm run start{{ if .production }}:production{{ end }}
   flags:
     - name: [production, p]

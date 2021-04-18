@@ -156,18 +156,16 @@ export default {
 	}),
 	computed: {
 		cheatingPercent() {
-
 			const allWordsWithCheating = this.audit.sentences.filter(s => s.searchStatus !== 'none' && s.resultsOnGoogle > 0).reduce((v, s) => s.words + v, 0)
 			const allWords = this.audit.sentences.reduce((v, s) => s.words + v, 0)
-			console.log(allWordsWithCheating, allWords)
 			return allWordsWithCheating / allWords
 		},
 		filteredSentences() {
 			return this.audit.sentences.filter(s => this.showIgnored || s.type === 'sentence').filter(s => this.showAllResults || s.resultsOnGoogle > 0)
 		},
 		auditProgress() {
-			const sentences = this.audit.sentences.length
-			const sentencesAudited = this.audit.sentences.filter(s => s.resultsOnGoogle >= 0 && s.searchStatus !== 'none').length
+			const sentences = this.auditSentences.length
+			const sentencesAudited = this.auditSentences.filter(s => s.resultsOnGoogle >= 0 && s.searchStatus !== 'none').length
 			return sentencesAudited / sentences
 		},
 		auditProgressPercent() {

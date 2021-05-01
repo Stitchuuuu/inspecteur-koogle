@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, session } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, session, dialog } from 'electron'
 import { platform } from 'os'
 import fs from 'fs'
 import worker from './worker.js'
@@ -31,6 +31,11 @@ function show(win, page) {
 let applicationGlobalMenu = null
 let bounceIDForCaptcha = null
 
+const auditExtensionsFileFilters = [
+	{ name: 'Analyse Inspecteur Koogle', extensions: ['json'] },
+	{ name: 'Tous les fichiers', extensions: ['*'] },
+]
+
 function applicationMenu() {
 	if (applicationGlobalMenu) return applicationGlobalMenu
 
@@ -52,6 +57,59 @@ function applicationMenu() {
 		{
 			label: 'Fichier',
 			submenu: [
+				{ 
+					id: 'new',
+					label: 'Nouveau',
+					accelerator: 'CommandOrControl+N',
+					click: async() => {
+						currentAudit = null
+						saveState()
+						appWindow && appWindow.$emit && appWindow.$emit('audit:new')
+					},
+				},
+				{ 
+					id: 'open-file',
+					label: 'Ouvrir',
+					accelerator: 'CommandOrControl+O',
+					click: async() => {
+						const result = await dialog.showOpenDialog({ 
+							properties: ['openFile'], 
+							filters: auditExtensionsFileFilters,
+						})
+						if (!result.canceled) {
+							openAudit(result.filePaths)
+						}
+					},
+				},
+				{
+					id: 'save-as',
+					label: 'Enregistrer sous',
+					accelerator: 'CommandOrControl+Shift+S',
+					click: async() => {
+						const result = await dialog.showSaveDialog({ 
+							properties: ['createDirectory'], 
+							filters: auditExtensionsFileFilters,
+						})
+						if (!result.canceled) {
+							saveAuditTo(result.filePath)
+						}
+
+					},
+				},
+				{ 
+					id: 'open-and-combine',
+					label: 'Combiner',
+					click: async() => {
+						const result = await dialog.showOpenDialog({ 
+							title: 'Choisir plusieurs analyses pour les combiner en une seule',
+							properties: ['openFile', 'multiSelections'], 
+							filters: auditExtensionsFileFilters,
+						})
+						if (!result.canceled) {
+							openAudit(result.filePaths)
+						}
+					},
+				},
 				isMac ? { role: 'close', label: 'Fermer' } : { role: 'quit', label: 'Fermer' },
 			],
 		},
@@ -214,7 +272,7 @@ let currentAudit = null
 function saveState() {
 	const p = path.join(app.getPath('userData'), 'data.json')
 	fs.writeFileSync(p, JSON.stringify({
-		currentAudit,
+		currentAudit: prepareAuditToSave(currentAudit),
 	}, null, 2))
 }
 
@@ -225,11 +283,89 @@ const loadState = () => ( new Promise((resolve, reject) => {
 		fs.readFile(p, (err, buffer) => {
 			if (err) return reject(err)
 			const data = JSON.parse(buffer.toString())
+			upgradeAudit(data.currentAudit)
 			currentAudit = data.currentAudit
+			if (data.currentAudit && data.currentAudit.upgraded) {
+				saveState()
+			}
+
 			resolve(data)
 		})
 	})
 }))
+
+function loadAudit(content) {
+	let audit = null
+	try {
+		audit = JSON.parse(content.toString())
+	} catch (err) {
+		throw new Error(err)
+	}
+	upgradeAudit(audit)
+	return audit
+}
+function upgradeAudit(audit) {
+	if (audit && audit.sentences && !audit.version) {
+		audit.version = app.getVersion()
+		for (const s of audit.sentences) {
+			s.ignored = s.type !== 'sentence'
+		}
+		audit.upgraded = true
+	}
+}
+function prepareAuditToSave(audit) {
+	if (audit === null) return null
+	const data = { ...audit }
+	if (data.upgraded) {
+		delete data.upgraded
+	}
+	return data
+}
+
+function saveAuditTo(filepath) {
+	fs.writeFileSync(filepath, JSON.stringify(prepareAuditToSave(currentAudit), null, 2))
+}
+
+
+function openAudit(filepaths) {
+	const allAudits = []
+	const errors = []
+	let mainAudit = null
+	for (const filepath of filepaths) {
+		try {
+			allAudits.push(loadAudit(fs.readFileSync(filepath)))			
+		} catch (err) {
+			errors.push(err)
+		}
+	}
+	if (errors.length === filepaths.length) {
+		throw new Error(errors.map(e => e.message).join(', '))
+	} else {
+		for (const a of allAudits) {
+			if (!mainAudit) mainAudit = a
+			else {
+				if (!mainAudit.combined) { 
+					mainAudit.originalData = [ mainAudit.originalData, a.originalData ]
+					mainAudit.combined = true
+				} else {
+					mainAudit.originalData.push(a.originalData)
+				}
+				for (const s of a.sentences) {
+					mainAudit.sentences.push(s)
+				}
+			}
+		}
+	}
+	currentAudit = mainAudit
+	appWindow && appWindow.$emit && appWindow.$emit('audit:load', currentAudit)
+	saveState()
+	if (errors.length === 0) {
+		return true
+	} else {
+		return errors
+	}
+}
+
 
 ipcMain.on('main:log', (e, args) => {
 	console.log.apply(console, args)
@@ -419,15 +555,9 @@ app.whenReady().then(async() => {
 	ipcMain.on('google:hide-window', () => {
 		googleClient && googleClient.window && googleClient.window.hide()
 	})
-	ipcMain.handle('boot', async () => {
+	ipcMain.handle('boot', async (e) => {
+		appWindow.$emit = (...args) => { e.sender.send.apply(e.sender, args) }
 		await loadState()
-		if (currentAudit && currentAudit.sentences && !currentAudit.version) {
-			currentAudit.version = app.getVersion()
-			for (const s of currentAudit.sentences) {
-				s.ignored = s.type !== 'sentence'
-			}
-			saveState()
-		}
 		return {
 			currentAudit,
 			isMac,
@@ -494,6 +624,10 @@ app.whenReady().then(async() => {
 				saveState()
 			}
 		}
+	})
+	ipcMain.handle('audit:new', () => {
+		currentAudit = null
+		saveState()
 	})
 	appWindow = createWindow()
 })

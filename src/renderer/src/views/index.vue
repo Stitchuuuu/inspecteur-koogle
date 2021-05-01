@@ -33,7 +33,7 @@
 						<ui-button @click="help = true">A l'aide !</ui-button>
 					</div>
 					<div>
-						<ui-button @click="audit = null">Charger un autre texte</ui-button>
+						<ui-button @click="newAudit()">Charger un autre texte</ui-button>
 					</div>
 				</div>
 				<div v-if="auditProgress < 1" class="progressbar">
@@ -304,8 +304,15 @@ export default {
 					text: rawText,
 					html: text,
 				})
+				this.loadingText = false
 			}
 		},
+		async newAudit(fromServer) {
+			this.audit = null
+			if (!fromServer) {
+				await this.$server.invoke('audit:new')
+			}
+		}
 	},
 	mounted() {
 		this._notification_timeout = -1
@@ -319,6 +326,12 @@ export default {
 			setTimeout(() => {
 				this.loaded = true
 			})
+		})
+		this.$server.on('audit:load', (audit) => {
+			this.audit = audit
+		})
+		this.$server.on('audit:new', () => {
+			this.newAudit(true)
 		})
 	},
 	components: {

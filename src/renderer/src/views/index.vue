@@ -465,7 +465,7 @@ svg {
 		text-align: center;
 		width: 100%;
 		font-size: 0.8em;
-		margin-top: -5px;
+		margin-top: -2px;
 	}
 	margin-bottom: 30px;
 }

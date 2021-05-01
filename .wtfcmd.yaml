@@ -1,8 +1,7 @@
 - group: main
   name: build
   desc: Compile main code (nodejs)
-  cmd: NODE_ENV=production node ../../node_modules/webpack/bin/webpack.js
-  cwd: ./src/main
+  cmd: npm run build:main
 
 - group: main
   name: dev
@@ -42,8 +41,7 @@
   desc: Compile + create the installer for Windows
   cmd: |
     wtf build
-    wtf icon
-    npm run make:window
+    npm run make:windows
 
 - name: icon
   desc: Create icon needed by the app from sources

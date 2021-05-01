@@ -199,8 +199,8 @@ function applicationMenu() {
 
 function createWindow(relativeURL, options) {
 	const opts = {
-		width: 800,
-		height: 640,
+		width: 1024,
+		height: 768,
 		title: APP_WINDOW_NAME,
 		...options,
 	}

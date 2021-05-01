@@ -16,7 +16,6 @@ function parseSentences(text) {
 			results = [...results, ...parseSentences(previous)]
 		}
 		results.push({ type: 'quote', words: getWords(quote).length, text: quote })
-		console.log(results)
 		index = quoteMatch.index + match.length
 		quoteMatch = reg.exec(text)
 	}

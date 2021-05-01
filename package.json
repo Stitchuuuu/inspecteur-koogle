@@ -1,6 +1,6 @@
 {
   "name": "inspecteur-koogle",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0",
   "description": "Test",
   "main": "index.js",
   "devDependencies": {

@@ -274,6 +274,7 @@ function saveState() {
 	fs.writeFileSync(p, JSON.stringify({
 		currentAudit: prepareAuditToSave(currentAudit),
 	}, null, 2))
+	SetEnableMenuItem('save-as', currentAudit !== null)
 }
 
 const loadState = () => ( new Promise((resolve, reject) => {
@@ -288,6 +289,7 @@ const loadState = () => ( new Promise((resolve, reject) => {
 			if (data.currentAudit && data.currentAudit.upgraded) {
 				saveState()
 			}
+			SetEnableMenuItem('save-as', currentAudit !== null)
 
 			resolve(data)
 		})

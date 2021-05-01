@@ -28,27 +28,22 @@
     wtf main build
     wtf renderer build
 
-- name: make
-  desc: Compile + create the installer
-  cmd: |
-    wtf build
-    wtf icon
-    {{ if .all }}npm run make:macos && npm run make:windows && npm run make:macos-m1{{ else }}npm run make{{ end }}
-  flags:
-    - name: [all]
-      desc: Compile for all platforms
-      test: $bool
-      default: false
-
 - group: make
-  name: all
-  desc: Compile + create the installer for all main platforms (macOS, macOS Apple Silicon, Windows)
+  name: mac
+  desc: Compile + create the installer for Mac platform
   cmd: |
     wtf build
     wtf icon
     npm run make:macos
-    npm run make:window
     npm run make:macos-m1
+
+- group: make
+  name: win
+  desc: Compile + create the installer for Windows
+  cmd: |
+    wtf build
+    wtf icon
+    npm run make:window
 
 - name: icon
   desc: Create icon needed by the app from sources

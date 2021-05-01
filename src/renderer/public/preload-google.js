@@ -109,7 +109,7 @@
 			// $log('Renderer | No captcha')
 			// Testing if there's a search
 			let search = window.location.search
-			if (window.localStorage.getItem('debug-captcha-feature') === '0') {
+			if (window && window.localStorage && window.localStorage.getItem('debug-captcha-feature') === '0') {
 				debuglog('Simulating captcha')
 				search = false
 			} else if (search) {
@@ -135,7 +135,7 @@
 			}
 			if (!search) {
 				// $log('Renderer | google:ready')
-				if (window.localStorage.getItem('debug-captcha-feature') === '0') {
+				if (window && window.localStorage && window.localStorage.getItem('debug-captcha-feature') === '0') {
 					debuglog('google:captcha')
 					$ipc.send('google:captcha')
 				} else {

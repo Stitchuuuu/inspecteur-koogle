@@ -297,7 +297,7 @@ let appWindow = null
 
 
 app.whenReady().then(async() => {
-	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.7_0')
+	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.8_0')
 	Menu.setApplicationMenu(applicationMenu())
 	session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
 		const name = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json'))).name
@@ -398,6 +398,13 @@ app.whenReady().then(async() => {
 	})
 	ipcMain.handle('boot', async () => {
 		await loadState()
+		if (currentAudit && currentAudit.sentences && !currentAudit.version) {
+			currentAudit.version = app.getVersion()
+			for (const s of currentAudit.sentences) {
+				s.ignored = s.type !== 'sentence'
+			}
+			saveState()
+		}
 		return {
 			currentAudit,
 			isMac,
@@ -417,7 +424,9 @@ app.whenReady().then(async() => {
 					resultsOnGoogle: null, 
 					searchLoading: false,
 					searchStatus: 'none',
+					ignored: s.type !== 'sentence',
 				})),
+				version: app.getVersion(),
 			}
 			saveState()
 			return currentAudit
@@ -452,6 +461,15 @@ app.whenReady().then(async() => {
 		return {
 			id: sentence.id,
 			resultsOnGoogle: results.total,
+		}
+	})
+	ipcMain.handle('sentence:ignored', async(e, id, val) => {
+		if (currentAudit && Array.isArray(currentAudit.sentences)) {
+			const s = currentAudit.sentences.find(s => s.id === id)
+			if (s) {
+				s.ignored = !!val
+				saveState()
+			}
 		}
 	})
 	appWindow = createWindow()

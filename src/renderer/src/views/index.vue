@@ -53,16 +53,20 @@
 							<ui-button v-if="!showIgnored" @click="showIgnored = !showIgnored">Afficher les citations et parties ignorées</ui-button>
 							<ui-button v-else @click="showIgnored = !showIgnored">Cacher les citations et parties ignorées</ui-button>
 						</div>
-						<div v-for="sentence in filteredSentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0, 'ignored': sentence.type !== 'sentence'}">
+						<div v-for="sentence in filteredSentences" :key="sentence.id" class="sentence" :class="{'success': sentence.searchStatus === 'success' && sentence.resultsOnGoogle === 0, 'error': sentence.searchStatus === 'failed' || sentence.resultsOnGoogle > 0, 'ignored': sentence.ignored }">
 							<div class="copy" @click="copySentence(sentence)" :class="{'loader': sentence.searchLoading }">
 								<template v-if="!sentence.searchLoading"><icon src="@/assets/icons/copy.svg" /></template>
 							</div>
 							<div class="text" @click="copySentence(sentence)">
 								<div>{{ sentence.sentence }}</div>
-								<div v-if="sentence.type !== 'sentence'" class="sentence-type">{{ sentence.type === 'quote' ? 'Citation' : 'Phrase courte / Titre / Numérotation' }} (ignorée)</div>
+								<div v-if="sentence.ignored" class="sentence-type">{{ getTypeSentence(sentence.type) }} (ignorée)</div>
 							</div>
 							<div v-if="sentence.resultsOnGoogle !== null && sentence.resultsOnGoogle > 0" class="results" :class="{'high': sentence.resultsOnGoogle.toString().length > 5, 'veryhigh': sentence.resultsOnGoogle.toString().length > 8}">{{ sentence.resultsOnGoogle }}</div>
 							<div class="actions">
+								<ui-button @click="toggleIgnore(sentence)" :title="sentence.ignored ? 'Vérifier' : 'Ignorer'">
+									<icon v-if="sentence.ignored" src="@/assets/icons/blocked.svg" />
+									<icon v-else src="@/assets/icons/checkmark.svg" />
+								</ui-button>
 								<ui-button @click="testGoogleSearch(sentence)"><icon src="@/assets/icons/search.svg" /></ui-button>
 								<ui-button type="link" :external="true" :href="generateGoogleSearchLink(sentence.sentence)"><icon src="@/assets/icons/google.svg" /></ui-button>
 							</div>
@@ -161,7 +165,7 @@ export default {
 			return allWordsWithCheating / allWords
 		},
 		filteredSentences() {
-			return this.audit.sentences.filter(s => this.showIgnored || s.type === 'sentence').filter(s => this.showAllResults || s.resultsOnGoogle > 0)
+			return this.audit.sentences.filter(s => this.showIgnored || !s.ignored).filter(s => this.showAllResults || s.resultsOnGoogle > 0)
 		},
 		auditProgress() {
 			const sentences = this.auditSentences.length
@@ -172,10 +176,30 @@ export default {
 			return this.auditProgress >= 1 ? '100' : Number(this.auditProgress * 100).toFixed(2)
 		},
 		auditSentences() {
-			return this.audit.sentences.filter(s => s.type === 'sentence')
+			return this.audit.sentences.filter(s => !s.ignored)
 		}
 	},
 	methods: {
+		toggleIgnore(sentence) {
+			sentence.ignored = !sentence.ignored
+			this.$server.invoke('sentence:ignored', sentence.id, sentence.ignored)
+			// TODO: Set the ignore into the main process too
+		},
+		getTypeSentence(type) {
+			let res = ''
+			switch(type) {
+			case 'quote':
+				res = 'Citation'
+				break
+			case 'short':
+				res = 'Phrase courte / Titre / Numérotation'
+				break
+			case 'sentence':
+				res = 'Phrase / Partie de phrase'
+				break
+			}
+			return res
+		},
 		async startSearchAll() {
 			this.allSearching = true
 			let nextSentenceToSearch = this.auditSentences.find(s => s.resultsOnGoogle === null || s.searchStatus === 'none')

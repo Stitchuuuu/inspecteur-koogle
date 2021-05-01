@@ -1,8 +1,9 @@
 {
   "name": "inspecteur-koogle",
   "version": "1.0.0",
-  "description": "Test",
+  "description": "Audit text to detect sentence piracy (copied from google)",
   "main": "index.js",
+	"repository": "github:Stitchuuuu/inspecteur-koogle",
   "devDependencies": {
     "@babel/core": "^7.13.8",
     "@babel/eslint-parser": "^7.13.8",

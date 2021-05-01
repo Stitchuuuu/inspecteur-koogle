@@ -135,6 +135,27 @@
 		</div>
 	</transition>
 	<transition name="fade-y">
+		<div v-if="newVersion && !newVersion.ignored" class="new-version modal-container">
+			<div class="modal">
+				<div class="modal-title">Nouvelle version disponible !</div>
+				<div class="modal-content">
+					<div>
+						Une nouvelle version est disponible : {{ newVersion.version }}
+					</div>
+					<div class="new-version--comment" v-html="parseMD(newVersion.comment)" style="margin-top: 20px"></div>
+				</div>
+				<div class="modal-actions">
+					<ui-button type="link" :external="true" :href="newVersion.url">
+						Télécharger
+					</ui-button>
+					<ui-button @click="newVersion.ignored = true">
+						Ignorer
+					</ui-button>
+				</div>
+			</div>
+		</div>
+	</transition>
+	<transition name="fade-y">
 		<div v-if="notification" class="notification">{{ notification }}</div>
 	</transition>
   </div>
@@ -161,6 +182,12 @@ export default {
 		showAllResults: true,
 		showIgnored: false,
 		help: false,
+
+		newVersion: null,
+
+		typingDebugCode: false,
+		debugCodeTyped: '',
+		timeoutDebugCode: -1,
 	}),
 	computed: {
 		cheatingPercent() {
@@ -312,7 +339,56 @@ export default {
 			if (!fromServer) {
 				await this.$server.invoke('audit:new')
 			}
-		}
+		},
+		onDebugCodeType(e) {
+			if (e.ctrlKey && e.key === 'd') {
+				if (!this.typingDebugCode) {
+					this.debugCodeTyped = ''
+					this.timeoutDebugCode = setTimeout(() => {
+						this.terminateDebugCode()
+					}, 10000)
+				}
+				this.typingDebugCode = true
+			}
+			else if (this.typingDebugCode && e.key.length === 1) {
+				this.debugCodeTyped += e.key
+			}
+			else if (this.typingDebugCode && e.key === 'Enter') {
+				this.terminateDebugCode()
+			}
+		},
+		terminateDebugCode() {
+			this.typingDebugCode = false
+			clearTimeout(this.timeoutDebugCode)
+			this.timeoutDebugCode = -1
+			this.$server.invoke('debugCode', this.debugCodeTyped)
+		},
+		parseMD(t) {
+			return t
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+				.replace(/~~([^~]+)~~/g, '<del>$1</del>')
+				.replace(/^\* (.+)/gm, '<li>$1</li>')
+				.replace(/\r\n<li>/g, '<li>')
+				.replace(/\r\n/g, '<br/>')
+				.replace(/<li>/g, function(n, index, whole) {
+					const ul = '<ul>'
+					const li = '</li>'
+					if (index < ul.length || (whole.substr(index - ul.length, ul.length) !== ul && whole.substr(index - li.length, li.length) !== li)) {
+						return '<ul><li>'
+					}
+					return n
+				})
+				.replace(/<\/li>/g, function(n, index, whole) {
+					const ul = '</ul>'
+					const li = '<li>'
+					if (whole.substr(index + n.length, ul.length) !== ul && whole.substr(index + n.length, li.length) !== li) {
+						return '</li></ul>'
+					}
+					return n
+				})
+		},
 	},
 	mounted() {
 		this._notification_timeout = -1
@@ -333,6 +409,15 @@ export default {
 		this.$server.on('audit:new', () => {
 			this.newAudit(true)
 		})
+		this.$server.on('version:new', (v) => {
+			if (!this.newVersion || v.by === 'menu') {
+				this.newVersion = { ...v, ignored: false }
+			}
+		})
+		window.addEventListener('keydown', this.onDebugCodeType)
+	},
+	beforeUnmount() {
+		window.removeEventListener('keydown', this.onDebugCodeType)
 	},
 	components: {
 		uiButton,
@@ -414,6 +499,7 @@ svg {
 		color: #091044;
 		display: flex;
 		flex-direction: column;
+		max-height: 100vh;
 		&-title {
 			font-weight: bold;
 			text-transform: uppercase;
@@ -421,6 +507,8 @@ svg {
 		&-content {
 			padding: 1em 0;
 			flex: 1;
+			max-height: 70vh;
+			overflow-y: auto;
 		}
 		&-actions {
 			display: flex;
@@ -480,6 +568,13 @@ svg {
 			align-items: center;
 			justify-content: center;
 			font-weight: bold;
+		}
+	}
+}
+.new-version {
+	&--comment {
+		ul {
+			padding-inline-start: 30px;
 		}
 	}
 }

@@ -3,13 +3,18 @@ import { platform } from 'os'
 import fs from 'fs'
 import worker from './worker.js'
 import path from 'path'
+import { isVersion, getLastVersionFromRemote } from './version.helper'
 
 const pt = platform()
 const isMac = pt === 'darwin'
 // const isWindows = pt === 'win32'
 const isBetaOrAlpha = (~app.getVersion().indexOf('-beta.') || ~app.getVersion().indexOf('-alpha.'))
-
+const isBeta = ~app.getVersion().indexOf('-beta.')
+const isAlpha = ~app.getVersion().indexOf('-alpha.')
 const APP_WINDOW_NAME = 'Inspecteur Koogle - Détecteur anti-plagiat'
+
+let debugMode = false
+let intervalCheckVersion = -1
 
 const IS_DEV = !((app && app.isPackaged) || process.env.NODE_ENV === 'production')
 if (!IS_DEV && app && app.isPackaged && !process.env.NODE_ENV) {
@@ -36,6 +41,14 @@ const auditExtensionsFileFilters = [
 	{ name: 'Tous les fichiers', extensions: ['*'] },
 ]
 
+async function checkNewVersion(type) {
+	const release = await getLastVersionFromRemote(pckg, isAlpha ? 'alpha' : (isBeta ? 'beta' : ''))
+	if (!release) return
+	if (isVersion(release.version, '>', app.getVersion())) {
+		appWindow && appWindow.$emit('version:new', { ...release, by: type })
+	}
+}
+
 function applicationMenu() {
 	if (applicationGlobalMenu) return applicationGlobalMenu
 
@@ -44,6 +57,13 @@ function applicationMenu() {
 			label: app.name,
 			submenu: [
 				{ role: 'about', label: 'À propos' },
+				{
+					id: 'check-for-updates',
+					label: 'Vérifier les mises à jour...',
+					click: () => {
+						checkNewVersion('menu')
+					},
+				},
 				{ type: 'separator' },
 				{ role: 'services', label: 'Services' },
 				{ type: 'separator' },
@@ -131,7 +151,7 @@ function applicationMenu() {
 					enabled: !!googleClient,
 				},
 				{ role: 'reload', label: 'Rafraichir' },
-				...((!IS_DEV && !isBetaOrAlpha) ? [] : [
+				...((!IS_DEV && !isBetaOrAlpha && !debugMode) ? [] : [
 					{ type: 'separator' },
 					{ role: 'toggleDevTools' },
 				]),
@@ -150,8 +170,27 @@ function applicationMenu() {
 				] : [
 					{ role: 'close' },
 				]),
-			],
+				...(debugMode ? [
+					{ 
+						label: 'Désactiver Debug Mode',
+						click: async() => {
+							debugMode = false
+							reloadMenu()
+						},
+					}] : [])],
 		},
+		...(!isMac ? [{ 
+			label: 'Extra',
+			submenu: [
+				{
+					id: 'check-for-updates',
+					label: 'Vérifier les mises à jour...',
+					click: () => {
+						checkNewVersion()
+					},
+				},
+			],
+		}]: []),
 	]
 	applicationGlobalMenu = Menu.buildFromTemplate(template)
 	return applicationGlobalMenu
@@ -187,6 +226,10 @@ function createWindow(relativeURL, options) {
 	}
 	win.on('closed', () => {
 		appWindow = null
+		clearInterval(intervalCheckVersion)
+		if (googleClient && googleClient.currentSearch && googleClient.currentSearch.window) {
+			googleClient.currentSearch.window.close()
+		}
 	})
 	return win
 }
@@ -208,7 +251,7 @@ function createGoogleSearchWindow() {
 	win.on('close', (e) => {
 		if (appWindow) {
 			e.preventDefault()
-			win.hide()	
+			win.hide()
 			setTimeout(() => {
 				if (!appWindow) {
 					win.close()
@@ -452,13 +495,19 @@ function SetEnableMenuItem(id, val) {
 }
 
 let appWindow = null
+let pckg = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json')))
 
+function reloadMenu() {
+	applicationGlobalMenu = null
+	Menu.setApplicationMenu(applicationMenu())
+	appWindow && appWindow.setMenu(applicationMenu())
+}
 
 app.whenReady().then(async() => {
 	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.8_0')
 	Menu.setApplicationMenu(applicationMenu())
 	session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-		const name = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json'))).name
+		const name = pckg.name
 		if (details.requestHeaders['User-Agent']) {
 			details.requestHeaders['User-Agent'] = details.requestHeaders['User-Agent'].replace(new RegExp(name + '\\/[0-9a-z.-]+\\s', 'i'), '').replace(/Electron\/[0-9a-z.-]+\s/i, '')
 		}
@@ -560,6 +609,9 @@ app.whenReady().then(async() => {
 	ipcMain.handle('boot', async (e) => {
 		appWindow.$emit = (...args) => { e.sender.send.apply(e.sender, args) }
 		await loadState()
+		clearInterval(intervalCheckVersion)
+		intervalCheckVersion = setInterval(() => checkNewVersion('interval'), 5 * 60 * 1000)
+		checkNewVersion('boot')
 		return {
 			currentAudit,
 			isMac,
@@ -630,6 +682,12 @@ app.whenReady().then(async() => {
 	ipcMain.handle('audit:new', () => {
 		currentAudit = null
 		saveState()
+	})
+	ipcMain.handle('debugCode', (e, code) => {
+		if (code === '4242') {
+			debugMode = !debugMode
+			reloadMenu()
+		}
 	})
 	appWindow = createWindow()
 })

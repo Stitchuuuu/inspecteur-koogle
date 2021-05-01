@@ -227,8 +227,12 @@ function createWindow(relativeURL, options) {
 	win.on('closed', () => {
 		appWindow = null
 		clearInterval(intervalCheckVersion)
-		if (googleClient && googleClient.currentSearch && googleClient.currentSearch.window) {
-			googleClient.currentSearch.window.close()
+		if (googleClient && googleClient.window) {
+			try {
+				googleClient.window.close()
+			} catch (e) {
+				// 
+			}
 		}
 	})
 	return win
@@ -251,10 +255,18 @@ function createGoogleSearchWindow() {
 	win.on('close', (e) => {
 		if (appWindow) {
 			e.preventDefault()
-			win.hide()
+			try {
+				win.hide()
+			} catch (e) {
+				// 
+			}
 			setTimeout(() => {
 				if (!appWindow) {
-					win.close()
+					try {
+						win.close()
+					} catch (e) {
+						// 
+					}
 				}
 			}, 500)
 		}
@@ -487,7 +499,10 @@ function GoogleSearchInit(options) {
 	})
 	prGoogleSearchInit.promise = pr
 	googleClient = { currentSearch }
-	createGoogleSearchWindow()
+	googleClient.window = createGoogleSearchWindow()
+	googleClient.window.on('closed', () => {
+		googleClient = null
+	})
 	return pr
 }
 function SetEnableMenuItem(id, val) {
@@ -690,4 +705,9 @@ app.whenReady().then(async() => {
 		}
 	})
 	appWindow = createWindow()
+	app.on('activate', () => {
+		if (!appWindow) {
+			appWindow = createWindow()
+		}
+	})
 })

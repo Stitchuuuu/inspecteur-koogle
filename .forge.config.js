@@ -3,7 +3,7 @@ const fs = require('fs')
 const tar = require('tar')
 
 const MAKER_APP_CONFIG_NAME = 'inspecteur_koogle'
-
+const DMG_APP_CONFIG_NAME = 'Inspecteur Koogle'
 let package
 
 function copyDirContents(dirFrom, dirTo) {
@@ -39,17 +39,18 @@ module.exports = {
 	makers: [
 		{
 			"name": "@electron-forge/maker-squirrel",
-			"config": {
-				"name": MAKER_APP_CONFIG_NAME,
+			"config": arch => ({
+				"name": `${MAKER_APP_CONFIG_NAME}-${arch}`,
 				"description": "Outil permettant d'analyser les potentiels plagiats d'un texte"
-			}
+			})
 		},
 		{
 			"name": "@electron-forge/maker-dmg",
 			"platform": "darwin",
-			"config": {
-				"format": "ULFO"
-			}
+			"config": arch => ({
+				"name": `${DMG_APP_CONFIG_NAME}-${arch === 'arm64' ? 'Apple-SL' : 'Intel'}`,
+				"format": "ULFO",
+			})
 		},
 		{
 			"name": "@electron-forge/maker-deb",

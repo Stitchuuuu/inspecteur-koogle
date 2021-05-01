@@ -55,7 +55,7 @@
 			waitForClick(el).then(resolve)
 			setTimeout(() => {
 				reject()
-			}, 2000)
+			}, 1500)
 			debuglog('IPC | click:', pos)
 			$ipc.send('click', pos)
 		}, 20))

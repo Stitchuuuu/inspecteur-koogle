@@ -519,7 +519,7 @@ function reloadMenu() {
 }
 
 app.whenReady().then(async() => {
-	if (IS_DEV) await session.defaultSession.loadExtension('/Users/stitchuuuu/Library/Application Support/BraveSoftware/Brave-Browser/Profile 1/Extensions/ljjemllljcmogpfapbkkighbhhppjdbg/6.0.0.8_0')
+	if (IS_DEV) await session.defaultSession.loadExtension(path.join(app.getAppPath(), 'src', 'vue-dev-tools-extension'))
 	Menu.setApplicationMenu(applicationMenu())
 	session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
 		const name = pckg.name

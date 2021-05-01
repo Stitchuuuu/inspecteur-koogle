@@ -104,6 +104,10 @@
 						<span><ui-button><icon src="@/assets/icons/google.svg" /></ui-button></span>
 						<span>Ouvre une page avec la recherche Google pour la phrase</span>
 					</div>
+					<div>
+						<span><ui-button><icon src="@/assets/icons/checkmark.svg" /></ui-button> <ui-button><icon src="@/assets/icons/blocked.svg" /></ui-button></span>
+						<span>Ignore / Considérer la phrase</span>
+					</div>
 					<div class="version">
 						<span>Développé par <ui-button type="link" :external="true" href="https://twitter.com/StitchuOfficiel">Stitchu</ui-button></span>
 						<span>Version {{ appVersion }}</span>

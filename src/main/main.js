@@ -29,6 +29,8 @@ function show(win, page) {
 	}
 }
 let applicationGlobalMenu = null
+let bounceIDForCaptcha = null
+
 function applicationMenu() {
 	if (applicationGlobalMenu) return applicationGlobalMenu
 
@@ -169,6 +171,22 @@ function createGoogleSearchWindow() {
 }
 let googleClient = null
 
+function AppShowAttention() {
+	if (isMac) {
+		return app.dock.bounce('critical')
+	} else {
+		appWindow && appWindow.setProgressBar(1, { mode: 'error' })
+		return !!appWindow
+	}
+}
+function AppHideAttention(val) {
+	if (isMac && val) {
+		app.dock.cancelBounce(val)
+	} else if (val) {
+		appWindow && appWindow.setProgressBar(-1)
+	}
+}
+
 function OnGoogleClientReady() {
 	if (prGoogleSearchInit) {
 		prGoogleSearchInit.resolve()
@@ -182,6 +200,8 @@ function OnGoogleClientReadyOrResults() {
 			cs.window.show()
 			if (cs.emit) {
 				cs.emit('captcha:done')
+				AppHideAttention(bounceIDForCaptcha)
+				bounceIDForCaptcha = false
 			}
 		}
 	} else if (googleClient.wasConsented && googleClient.currentSearch && googleClient.state === 'ready') {
@@ -369,7 +389,7 @@ app.whenReady().then(async() => {
 	ipcMain.on('google:consent-window', () => {
 		googleClient.state = 'consent-window'
 		googleClient.lastStateUpdate = new Date()
-		googleClient.window.show()
+		// googleClient.window.show()
 	})
 	ipcMain.on('google:ready', () => {
 		googleClient.state = 'ready'
@@ -388,6 +408,9 @@ app.whenReady().then(async() => {
 		} else if (googleClient.currentSearch && googleClient.currentSearch.reject) {
 			clearTimeout(googleClient.currentSearch.timeout)
 			googleClient.currentSearch.reject(new Error('Captcha required.'))
+		}
+		if (!bounceIDForCaptcha) {
+			bounceIDForCaptcha = AppShowAttention()
 		}
 	})
 	ipcMain.on('google:show-window', () => {

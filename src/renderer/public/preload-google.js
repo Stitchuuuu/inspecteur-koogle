@@ -48,11 +48,14 @@
 		}
 		if (!el) return
 		el.scrollIntoView()
-		await new Promise(resolve => setTimeout(() => {
+		await new Promise((resolve, reject) => setTimeout(() => {
 			const { x, y } = el.getBoundingClientRect()
 			const pos = { x, y }
 			// setCursorPosition(pos)
 			waitForClick(el).then(resolve)
+			setTimeout(() => {
+				reject()
+			}, 2000)
 			debuglog('IPC | click:', pos)
 			$ipc.send('click', pos)
 		}, 20))
@@ -100,7 +103,11 @@
 			// Consent window, we disable everything then we submit
 			const disableButtons = document.querySelectorAll(`button[aria-label^="Désactiver"]`)
 			for (const [i, btn] of disableButtons.entries()) {
-				await clickOn(btn, { delay: i ? 500 : 0 })
+				try {
+					await clickOn(btn, { delay: i ? 500 : 0 })
+				} catch (err) {
+					console.error('Could not click on', btn)
+				}
 			}
 			const submit = document.querySelector('form button')
 			clickOn(submit, { delay: 500 })

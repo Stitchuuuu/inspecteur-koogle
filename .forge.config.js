@@ -51,8 +51,10 @@ module.exports = {
 			"name": "@electron-forge/maker-dmg",
 			"platform": "darwin",
 			"config": arch => ({
-				"name": `${DMG_APP_CONFIG_NAME}-${arch === 'arm64' ? 'Apple-SL' : 'Intel'}`,
 				"format": "ULFO",
+				"additionalDMGOptions": {
+					"title": `${MAKER_APP_CONFIG_NAME}`
+				}
 			})
 		},
 		{
@@ -105,6 +107,20 @@ module.exports = {
 				cwd: updateFolder,
 			}, ['.'])
 			console.log('Creating update... ok')
-    }
+    },
+		postMake: (forgeConfig, makeResult) => {
+			for (const res of makeResult) {
+				if (res.platform === 'darwin') {
+					console.log('Renaming DMG...')
+					const path = res.artifacts[0]
+					const parts = path.split('/')
+					parts.pop()
+					parts.push(`${DMG_APP_CONFIG_NAME}-${res.packageJSON.version}-${res.arch === 'arm64' ? 'Apple-Silicon-M1-2020' : 'Intel'}.dmg`)
+					fs.renameSync(res.artifacts[0], parts.join('/'))
+					console.log('Renaming DMG...ok')
+				}
+
+			}
+		}
   }
 }

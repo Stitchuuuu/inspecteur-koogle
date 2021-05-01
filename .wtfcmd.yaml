@@ -32,7 +32,6 @@
   desc: Compile + create the installer for Mac platform
   cmd: |
     wtf build
-    wtf icon
     npm run make:macos
     npm run make:macos-m1
 

@@ -41,7 +41,10 @@ module.exports = {
 			"name": "@electron-forge/maker-squirrel",
 			"config": arch => ({
 				"name": `${MAKER_APP_CONFIG_NAME}-${arch}`,
-				"description": "Outil permettant d'analyser les potentiels plagiats d'un texte"
+				"description": "Outil permettant d'analyser les potentiels plagiats d'un texte",
+				"setupIcon": path.join(__dirname, "assets/icon.ico"),
+				"iconUrl": path.join(__dirname, "assets/icon.ico"),
+				"skipUpdateIcon": true,
 			})
 		},
 		{

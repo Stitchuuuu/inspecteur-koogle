@@ -108,12 +108,20 @@
 				</template>
 				<template v-else-if="installType === 'windows'">
 					<div>
-						<img src="assets/install/windows/open.png" @click="showImage"/>
-						<p>Ouvrir le fichier .exe téléchargé précédemment. L'application va s'ouvrir et s'installer automatiquement.</p>
+						<img src="assets/install/windows/allow.gif" @click="showImage"/>
+						<p>Autoriser la conservation du fichier Setup.exe. Par défaut, Windows va bloquer l'exécutable.</p>
 					</div>
 					<div>
-						<img src="assets/install/windows/remove.png" @click="showImage"/>
-						<p>Vous pouvez maintenant supprimer le fichier Setup.exe, l'application est dans votre liste de programmes !</p>
+						<img src="assets/install/windows/install.gif" @click="showImage"/>
+						<p>Installer l'application. Il faudra de nouveau autoriser l'application à être lancé. A la fin de l'installation, l'application démarrera automatiquement.</p>
+					</div>
+					<div>
+						<img src="assets/install/windows/delete.gif" @click="showImage"/>
+						<p>Vous pouvez maintenant supprimer le fichier Setup.exe, que vous venez de télécharger.</p>
+					</div>
+					<div>
+						<img src="assets/install/windows/run.gif" @click="showImage"/>
+						<p>Vous pouvez maintenant lancer l'application depuis le menu démarrer !</p>
 					</div>
 				</template>
 			</div>

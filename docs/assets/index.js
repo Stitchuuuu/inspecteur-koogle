@@ -104,7 +104,7 @@ var $app = Vue.createApp({
 		this.isBrave = !!navigator.brave
 		switch (navigator.platform) {
 			case 'MacIntel':
-				if (navigator.userAgent.match(/OS X 10_([789]|1[01234])/)) {
+				if (!navigator.userAgent.match(/OS X 10_([789]|1[01234])/)) {
 					this.downloadType = 'mac'
 					var w = document.createElement("canvas").getContext("webgl")
 					var d = w.getExtension('WEBGL_debug_renderer_info')
@@ -118,7 +118,7 @@ var $app = Vue.createApp({
 					this.downloadType = 'macIntel'
 				}
 				break
-			case 'win32':
+			case 'Win32':
 				this.downloadType = 'windows'
 				break
 		}

@@ -1,5 +1,15 @@
+const axios = window.axios
+
 var $app = Vue.createApp({
 	data: () => ({
+		loading: true,
+		loadingRelease: true,
+		animateRelease: true,
+		release: {
+			macOSIntel: null,
+			macOSApple: null,
+			windows: null,
+		},
 		showBraveModal: false,
 		showBatPopover: false,
 		installType: '',
@@ -61,6 +71,28 @@ var $app = Vue.createApp({
 			this.modalImageStyle.width = width + 'px'
 			this.modalImageStyle.height = height + 'px'
 			this.modal.image = target.getAttribute('src')
+		},
+		async getLastRelease() {
+			await axios.get('https://api.github.com/repos/stitchuuuu/inspecteur-koogle/releases').then((res) => {
+				if (res.data.length) {
+					res.data.filter(r => !r.draft && !r.prerelease).some((r) => {
+						if (this.release.macOSApple && this.release.macOSIntel && this.release.windows) return true
+						for (const asset of r.assets) {
+							var name = null
+							if (asset.name.endsWith('Setup.exe') && !this.release.windows) {
+								name = 'windows'
+							} else if (asset.name.endsWith('.dmg') && asset.name.indexOf('MacOS-Apple-Silicon') && !this.release.macOSApple) {
+								name = 'macOSApple'
+							}	else if (asset.name.endsWith('.dmg') && asset.name.indexOf('MacOS-Intel') && !this.release.macOSIntel) {
+								name = 'macOSIntel'
+							}
+							if (name) {
+								this.release[name] = { version: r.tag_name, url: asset.browser_download_url }
+							}
+						}
+					})
+				}
+			})
 		}
 	},
 	computed: {
@@ -90,5 +122,25 @@ var $app = Vue.createApp({
 				this.downloadType = 'windows'
 				break
 		}
+		let t
+		let loadTimeout = -1
+		this.getLastRelease().finally(() => {
+			clearTimeout(loadTimeout)
+			if (!this.loading) {
+				setTimeout(() => {
+					this.loading = false
+					this.loadingRelease = false
+				}, 500 - (Date.now() - t))	
+			} else {
+				this.animateRelease = false
+				this.loadingRelease = false
+				this.loading = false
+			}
+		})
+		loadTimeout = setTimeout(() => {
+			t = Date.now()
+			loadTimeout = -1
+			this.loading = false
+		}, 50)
 	}
 }).mount('#app')

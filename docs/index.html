@@ -21,153 +21,164 @@
 </head>
 <body>
 	<div id="app" v-cloak>
-	<section>
-		<div class="header">
-			<div class="header--app-desc">
-				<img src="assets/icons/app.png" height="64"/>
-				<div>
-					<h1>Inspecteur Koogle</h1>
-					<p>Analyseur de texte pour détecter l'anti-plagiat sur Google</p>
+	<template v-if="!loading">
+		<section>
+			<div class="header">
+				<div class="header--app-desc">
+					<img src="assets/icons/app.png" height="64"/>
+					<div>
+						<h1>Inspecteur Koogle</h1>
+						<p>Analyseur de texte pour détecter l'anti-plagiat sur Google</p>
+					</div>
 				</div>
-			</div>
-			<div class="download-links">
-				<a class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/releases/download/1.0.0/Inspecteur.Koogle-MacOS-Intel-1.0.0.dmg" style="margin-bottom: 20px">
-					<span><i class="icon-github"></i> Voir sur Github</span>
-				</a>				
-				<a v-if="downloadType === 'all' || downloadType === 'windows'" class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/releases/download/1.0.0/Inspecteur.Koogle-MacOS-Intel-1.0.0.dmg" download>
-					<span><i class="icon-windows8"></i> Télécharger</span>
-					<span class="button--subtitle">1.0.1 - Windows (64 bits)</span>
-				</a>
-				<a v-if="downloadType === 'all' || downloadType === 'mac' || downloadType === 'macIntel'" class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/releases/download/1.0.0/Inspecteur.Koogle-MacOS-Intel-1.0.0.dmg" download>
-					<span><i class="icon-apple"></i> Télécharger</span>
-					<span class="button--subtitle">1.0.1 - macOS (Intel)</span>
-				</a>
-				<div v-if="downloadType === 'all' || downloadType === 'mac' || downloadType === 'macApple'">
-					<a class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/releases/download/1.0.0/Inspecteur.Koogle-MacOS-Intel-1.0.0.dmg" download>
-						<span><i class="icon-apple"></i> Télécharger</span>
-						<span class="button--subtitle">1.0.1 - macOS (Apple Silicon)</span>
+				<div class="download-links">
+					<a class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/" style="margin-bottom: 20px">
+						<span><i class="icon-github"></i> Voir sur Github</span>
 					</a>
-					<a v-if="downloadType === 'mac'" class="help" target="_blank" href="https://support.apple.com/fr-fr/HT211814">Comment déterminer si j'ai un Mac Apple Silicon ?</a>	
+					<transition name="fade-y">
+						<div v-if="loadingRelease" class="loading">
+							<div class="loader medium"></div>
+						</div>
+					</transition>
+					<transition :name="animateRelease ? 'fade-y' : ''">
+						<div v-if="!loadingRelease">
+							<a v-if="release.windows && (downloadType === 'all' || downloadType === 'windows')" class="button" :href="release.windows.url" download>
+								<span><i class="icon-windows8"></i> Télécharger</span>
+								<span class="button--subtitle">{{ release.windows.version }} - Windows (64 bits)</span>
+							</a>
+							<a v-if="release.macOSIntel && (downloadType === 'all' || downloadType === 'mac' || downloadType === 'macIntel')" class="button" :href="release.macOSIntel.url" download>
+								<span><i class="icon-apple"></i> Télécharger</span>
+								<span class="button--subtitle">{{ release.macOSIntel.version }} - macOS (Intel)</span>
+							</a>
+							<div v-if="release.macOSApple && (downloadType === 'all' || downloadType === 'mac' || downloadType === 'macApple')">
+								<a class="button" :href="release.macOSApple.url" download>
+									<span><i class="icon-apple"></i> Télécharger</span>
+									<span class="button--subtitle">{{ release.macOSApple.version }} - macOS (Apple Silicon)</span>
+								</a>
+								<a v-if="downloadType === 'mac'" class="help" target="_blank" href="https://support.apple.com/fr-fr/HT211814">Comment déterminer si j'ai un Mac Apple Silicon ?</a>	
+							</div>
+							<a v-if="downloadType !== 'all'" class="help" @click.prevent="downloadType = 'all'" href="#" style="margin-top: 15px">Voir toute les versions</a>	
+						</div>
+					</transition>
+			</div>
+				
+			</div>
+		</section>
+		<section>
+			<div>
+				<img class="col" src="assets/preview.gif" style="width: 300px"/>
+				<div class="col">
+					<h2>À quoi sert cet outil ?</h2>
+					<p>Cet outil sert à analyser les phrases de plusieurs pages d'un document afin de déterminer si elles existent sur Google. Il fait donc office d'outil de détection anti-plagiat minimal.</p>
+					<p>L'outil ne possède aucune base de données et se sert uniquement des résultats exacts de Google.</p>
+					<p>Il permet donc d'automatiser la tâche fastidieuse de copier chaque phrase sur Google, et vous demande de temps en temps de remplir un captcha.</p>
+				</div>	
+			</div>
+		</section>
+		<section class="install">
+			<div>
+				<div class="install--title">
+					<h2>Installation</h2>
+					<div class="sublinks">
+						<button :class="{'active': installType === 'mac'}" @click="installType = 'mac'">MacOS</button>
+						<button :class="{'active': installType === 'windows'}" @click="installType = 'windows'">Windows</button>
+					</div>
 				</div>
-				<a v-if="downloadType !== 'all'" class="help" @click.prevent="downloadType = 'all'" href="#" style="margin-top: 15px">Voir toute les versions</a>	
-			</div>
-		</div>
-	</section>
-	<section>
-		<div>
-			<img class="col" src="assets/preview.gif" style="width: 300px"/>
-			<div class="col">
-				<h2>À quoi sert cet outil ?</h2>
-				<p>Cet outil sert à analyser les phrases de plusieurs pages d'un document afin de déterminer si elles existent sur Google. Il fait donc office d'outil de détection anti-plagiat minimal.</p>
-				<p>L'outil ne possède aucune base de données et se sert uniquement des résultats exacts de Google.</p>
-				<p>Il permet donc d'automatiser la tâche fastidieuse de copier chaque phrase sur Google, et vous demande de temps en temps de remplir un captcha.</p>
-			</div>	
-		</div>
-	</section>
-	<section class="install">
-		<div>
-			<div class="install--title">
-				<h2>Installation</h2>
-				<div class="sublinks">
-					<button :class="{'active': installType === 'mac'}" @click="installType = 'mac'">MacOS</button>
-					<button :class="{'active': installType === 'windows'}" @click="installType = 'windows'">Windows</button>
-				</div>
-			</div>
-			<template v-if="installType === 'mac'">
-			<div>
-				<img src="assets/install/macos/open.gif" @click="showImage"/>
-				<p>Ouvrir le fichier .dmg téléchargé précédemment</p>
-			</div>
-			<div>
-				<img src="assets/install/macos/install.gif" @click="showImage"/>
-				<p>Glisser & Déposer l'application dans le dossier Applications</p>
-			</div>
-			<div>
-				<img src="assets/install/macos/run.gif" @click="showImage"/>
-				<p>Lancer l'application Inspecteur Koogle</p>
-			</div>
-			<div>
-				<img src="assets/install/macos/run-security.gif" @click="showImage"/>
-				<p>Si macOS vous empêche de l'ouvrir, allez dans Préférences Système > Sécurité & Confidentialité, puis faites Ouvrir quand même, en bas.</p>
-			</div>
-			<div>
-				<img src="assets/install/macos/unmount.gif" @click="showImage"/>
-				<p>Vous pouvez maintenant démonter l'image Inspecteur Koogle, et supprimer le .dmg</p>
-			</div>
-			</template>
-			<template v-else-if="installType === 'windows'">
+				<template v-if="installType === 'mac'">
 				<div>
-					<img src="assets/install/windows/open.png" @click="showImage"/>
-					<p>Ouvrir le fichier .exe téléchargé précédemment. L'application va s'ouvrir et s'installer automatiquement.</p>
+					<img src="assets/install/macos/open.gif" @click="showImage"/>
+					<p>Ouvrir le fichier .dmg téléchargé précédemment</p>
 				</div>
 				<div>
-					<img src="assets/install/windows/remove.png" @click="showImage"/>
-					<p>Vous pouvez maintenant supprimer le fichier Setup.exe, l'application est dans votre liste de programmes !</p>
+					<img src="assets/install/macos/install.gif" @click="showImage"/>
+					<p>Glisser & Déposer l'application dans le dossier Applications</p>
 				</div>
-			</template>
-		</div>
-	</section>
-	<section class="support">
-		<div>
-			<div class="col">
-				<h2>Support</h2>
-				<p>Pour tout problème, utiliser ce lien pour créer un ticket, et procurez un maximum de détail (Windows / macOS, capture d'écran, ce que vous avez fait...)</p>
-			</div>
-			<div class="col"><a class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/issues/new" target="_blank"><i class="icon-github" style="margin-right: 10px"></i> Créer un ticket sur Github</a></div>
-		</div>
-	</section>
-	<section class="support">
-		<div>
-			<div class="col support-buttons">
-				<a class="button" target="_blank" href="https://www.paypal.com/paypalme/fauconnet">
-					<i class="icon-paypal"></i>
-					<span>Paypal</span>
-				</a>
-				<button @click="clickOnBat">
-					<img src="assets/icons/bat-logo.svg">
-					<span>Brave BAT</span>
-				</button>
-			</div>
-			<div class="col">
-				<h2>Notes du dev</h2>
-				<p>J'ai réalisé cet outil pour une amie, en échange de bon procédé.</p>
-				<p>Mais pour que vous ayez une idée, j'ai passé environ un total de 30h sur cet outil, ce qui corresponds à une somme de ~1300€ sur un tarif normal pour un client, au vu de mon expérience.</p>
-				<p>Pensez à moi si jamais une entreprise de votre entourage chercher un développeur en freelance :)</p>
-				<p>Et si jamais vous voulez vraiment participer financièrement au projet, vous pouvez aussi faire un don.</p>
-			</div>
-		</div>
-	</section>
-	<div class="footer">Application et site créés par <a href="https://twitter.com/StitchuOfficiel">Stitchu</a></div>
-	<transition name="fade-y">
-		<div class="show-brave" v-if="showBatPopover">
-			<div class="show-brave--arrow"></div>
-			<div class="show-brave--content">Cliquez sur l'icône <img src="assets/icons/bat-logo.svg"> pour faire un don de BAT</div>
-		</div>
-	</transition>
-	<transition name="fade-y">
-		<div class="modal-container" v-if="modalExists" @click="modalClear">
-			<div v-if="modal.brave" class="modal" @click.stop>
-				<div class="modal--title">Vous ne possédez pas Brave ?</div>
-				<div class="modal--content">
-					<p>Vous n'utilisez pas encore le navigateur Brave ? Vous devriez essayer !</p>
-					<p>C'est un navigateur qui intègre un bloqueur de publicité très efficace, bloque tout traqueur vous identifiant, et vous permet de gagner des revenus en recevant des notifications non intrusives !</p>
-					<p>Et avec ces revenus, vous pouvez financer directement des créateurs, comme moi !</p>
+				<div>
+					<img src="assets/install/macos/run.gif" @click="showImage"/>
+					<p>Lancer l'application Inspecteur Koogle</p>
 				</div>
-				<div class="modal--actions">
-					<a class="button" href="https://brave.com/fr/#" target="_blank"><img src="assets/icons/brave-icon.svg"/> Télécharger Brave</a>
-					<button class="button" @click="modal.brave = false">Fermer</button>
+				<div>
+					<img src="assets/install/macos/run-security.gif" @click="showImage"/>
+					<p>Si macOS vous empêche de l'ouvrir, allez dans Préférences Système > Sécurité & Confidentialité, puis faites Ouvrir quand même, en bas.</p>
 				</div>
+				<div>
+					<img src="assets/install/macos/unmount.gif" @click="showImage"/>
+					<p>Vous pouvez maintenant démonter l'image Inspecteur Koogle, et supprimer le .dmg</p>
+				</div>
+				</template>
+				<template v-else-if="installType === 'windows'">
+					<div>
+						<img src="assets/install/windows/open.png" @click="showImage"/>
+						<p>Ouvrir le fichier .exe téléchargé précédemment. L'application va s'ouvrir et s'installer automatiquement.</p>
+					</div>
+					<div>
+						<img src="assets/install/windows/remove.png" @click="showImage"/>
+						<p>Vous pouvez maintenant supprimer le fichier Setup.exe, l'application est dans votre liste de programmes !</p>
+					</div>
+				</template>
 			</div>
-			<div v-if="modal.image" class="modal modal__image" @click.stop/>
-				<div class="modal--content">
-					<img :src="modal.image" :style="modalImageStyle">
+		</section>
+		<section class="support">
+			<div>
+				<div class="col">
+					<h2>Support</h2>
+					<p>Pour tout problème, utiliser ce lien pour créer un ticket, et procurez un maximum de détail (Windows / macOS, capture d'écran, ce que vous avez fait...)</p>
 				</div>
-				<div class="modal--actions">
-					<button class="button" @click="modal.image = false">Fermer</button>
+				<div class="col"><a class="button" href="https://github.com/Stitchuuuu/inspecteur-koogle/issues/new" target="_blank"><i class="icon-github" style="margin-right: 10px"></i> Créer un ticket sur Github</a></div>
+			</div>
+		</section>
+		<section class="support">
+			<div>
+				<div class="col support-buttons">
+					<a class="button" target="_blank" href="https://www.paypal.com/paypalme/fauconnet">
+						<i class="icon-paypal"></i>
+						<span>Paypal</span>
+					</a>
+					<button @click="clickOnBat">
+						<img src="assets/icons/bat-logo.svg">
+						<span>Brave BAT</span>
+					</button>
+				</div>
+				<div class="col">
+					<h2>Notes du dev</h2>
+					<p>J'ai réalisé cet outil pour une amie, en échange de services.</p>
+					<p>Pensez à moi si jamais une entreprise de votre entourage cherche un <a href="https://www.malt.fr/profile/kfauconnet" target="_blank">développeur en freelance</a> !</p>
+					<p>Et si jamais vous voulez vraiment participer financièrement au projet, car vous le pouvez et que ce logiciel vous a aidé, vous pouvez utiliser les boutons précédents.</p>
 				</div>
 			</div>
+		</section>
+		<div class="footer">Application et site créés par <a href="https://twitter.com/StitchuOfficiel" target="_blank">Stitchu</a> / Profil <a href="https://www.malt.fr/profile/kfauconnet" target="_blank">Malt</a></div>
+		<transition name="fade-y">
+			<div class="show-brave" v-if="showBatPopover">
+				<div class="show-brave--arrow"></div>
+				<div class="show-brave--content">Cliquez sur l'icône <img src="assets/icons/bat-logo.svg"> pour faire un don de BAT</div>
+			</div>
+		</transition>
+		<transition name="fade-y">
+			<div class="modal-container" v-if="modalExists" @click="modalClear">
+				<div v-if="modal.brave" class="modal" @click.stop>
+					<div class="modal--title">Vous ne possédez pas Brave ?</div>
+					<div class="modal--content">
+						<p>Vous n'utilisez pas encore le navigateur Brave ? Vous devriez essayer !</p>
+						<p>C'est un navigateur qui intègre un bloqueur de publicité très efficace, bloque tout traqueur vous identifiant, et vous permet de gagner des revenus en recevant des notifications non intrusives !</p>
+						<p>Et avec ces revenus, vous pouvez financer directement des créateurs, comme moi !</p>
+					</div>
+					<div class="modal--actions">
+						<a class="button" href="https://brave.com/fr/#" target="_blank"><img src="assets/icons/brave-icon.svg"/> Télécharger Brave</a>
+						<button class="button" @click="modal.brave = false">Fermer</button>
+					</div>
+				</div>
+				<div v-if="modal.image" class="modal modal__image" @click.stop/>
+					<div class="modal--content">
+						<img :src="modal.image" :style="modalImageStyle">
+					</div>
+					<div class="modal--actions">
+						<button class="button" @click="modal.image = false">Fermer</button>
+					</div>
+				</div>
+			</div>
+		</transition>
 		</div>
-	</transition>
-	</div>
+	</template>
 	</div>
 </body>
